@@ -105,40 +105,26 @@ class SpotifyStreaming:
 
 if __name__ == "__main__":
     import sys
-    import pathlib
     import config
     import logging
+    from gyjukebox.spotify.pyspotify import create_logged_in_session
+
     logging.basicConfig(level=logging.DEBUG)
 
     Gst.init(sys.argv)
 
-    track_uri = 'spotify:track:6xZtSE6xaBxmRozKA0F6TA'
-    logged_in = threading.Event()
+    track_uri = "spotify:track:6xZtSE6xaBxmRozKA0F6TA"
     end_of_track = threading.Event()
-    spotify_config = spotify.Config()
-    spotify_config.load_application_key_file(
-        pathlib.Path(__file__).parent / "spotify_appkey.key"
-    )
-    session = spotify.Session(spotify_config)
+    session = create_logged_in_session(config.SPOTIFY_USERNAME, config.SPOTIFY_PASSWORD)
     s = SpotifyStreaming(session)
     loop = spotify.EventLoop(session)
-
-    def on_connection_state_updated(session):
-        if session.connection.state is spotify.ConnectionState.LOGGED_IN:
-            logged_in.set()
 
     def on_end_of_track(self):
         end_of_track.set()
 
-    session.on(
-        spotify.SessionEvent.CONNECTION_STATE_UPDATED, on_connection_state_updated
-    )
     session.on(spotify.SessionEvent.END_OF_TRACK, on_end_of_track)
 
     loop.start()
-    session.login(config.SPOTIFY_USERNAME, config.SPOTIFY_PASSWORD)
-
-    logged_in.wait()
     track = session.get_track(track_uri).load()
     session.player.load(track)
     session.player.play()
