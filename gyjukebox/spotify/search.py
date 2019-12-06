@@ -46,7 +46,8 @@ class Client:
             "offset": offset,
         }
         r = requests.get(url, params=params, headers=headers)
-        r.raise_for_status()
+        if not r.ok:
+            raise ValueError(r.reason)
         j_data = r.json()
         albums, artists, tracks, playlists = (
             j_data["albums"]["items"],
@@ -55,3 +56,30 @@ class Client:
             j_data["playlists"]["items"],
         )
         return albums, artists, tracks, playlists
+
+    def get_track(self, id_or_uri):
+        """Get track information
+
+        Args:
+            id_or_uri (str)
+
+        Raises:
+            ValueError: if track is not exists
+
+        Returns:
+            track information
+        """
+        id = self._extract_id(id_or_uri)
+        url = f'{self.BASE_URL}/v1/tracks/{id}'
+        headers = {"Authorization": self._get_authorization_header()}
+        params = {'market': 'TW'}
+        r = requests.get(url, params=params, headers=headers)
+        if not r.ok:
+            raise ValueError(r.reason)
+        return r.json()
+
+    def _extract_id(self, id_or_uri):
+        componments = id_or_uri.split(":")
+        if len(componments) == 3:
+            return componments[-1]
+        return id_or_uri

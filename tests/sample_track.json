@@ -1,0 +1,85 @@
+{
+    "album": {
+        "album_type": "album",
+        "artists": [
+            {
+                "external_urls": {
+                    "spotify": "https://open.spotify.com/artist/5Epbm4z0XUwp08se9Yu5x0"
+                },
+                "href": "https://api.spotify.com/v1/artists/5Epbm4z0XUwp08se9Yu5x0",
+                "id": "5Epbm4z0XUwp08se9Yu5x0",
+                "name": "Sister Crayon",
+                "type": "artist",
+                "uri": "spotify:artist:5Epbm4z0XUwp08se9Yu5x0"
+            }
+        ],
+        "external_urls": {
+            "spotify": "https://open.spotify.com/album/2WrPI8Nf8PvIwJg5o88hTD"
+        },
+        "href": "https://api.spotify.com/v1/albums/2WrPI8Nf8PvIwJg5o88hTD",
+        "id": "2WrPI8Nf8PvIwJg5o88hTD",
+        "images": [
+            {
+                "height": 640,
+                "url": "https://i.scdn.co/image/ab67616d0000b27352ccae8b07fcb32f60fd3a1a",
+                "width": 640
+            },
+            {
+                "height": 300,
+                "url": "https://i.scdn.co/image/ab67616d00001e0252ccae8b07fcb32f60fd3a1a",
+                "width": 300
+            },
+            {
+                "height": 64,
+                "url": "https://i.scdn.co/image/ab67616d0000485152ccae8b07fcb32f60fd3a1a",
+                "width": 64
+            }
+        ],
+        "name": "Bellow",
+        "release_date": "2011-03-24",
+        "release_date_precision": "day",
+        "total_tracks": 10,
+        "type": "album",
+        "uri": "spotify:album:2WrPI8Nf8PvIwJg5o88hTD"
+    },
+    "artists": [
+        {
+            "external_urls": {
+                "spotify": "https://open.spotify.com/artist/5Epbm4z0XUwp08se9Yu5x0"
+            },
+            "href": "https://api.spotify.com/v1/artists/5Epbm4z0XUwp08se9Yu5x0",
+            "id": "5Epbm4z0XUwp08se9Yu5x0",
+            "name": "Sister Crayon",
+            "type": "artist",
+            "uri": "spotify:artist:5Epbm4z0XUwp08se9Yu5x0"
+        }
+    ],
+    "disc_number": 1,
+    "duration_ms": 238520,
+    "explicit": false,
+    "external_ids": {
+        "isrc": "GBHLW1012044"
+    },
+    "external_urls": {
+        "spotify": "https://open.spotify.com/track/6jm4am2X0KY9EyU1HrPPDu"
+    },
+    "href": "https://api.spotify.com/v1/tracks/6jm4am2X0KY9EyU1HrPPDu",
+    "id": "6jm4am2X0KY9EyU1HrPPDu",
+    "is_local": false,
+    "is_playable": true,
+    "linked_from": {
+        "external_urls": {
+            "spotify": "https://open.spotify.com/track/6xZtSE6xaBxmRozKA0F6TA"
+        },
+        "href": "https://api.spotify.com/v1/tracks/6xZtSE6xaBxmRozKA0F6TA",
+        "id": "6xZtSE6xaBxmRozKA0F6TA",
+        "type": "track",
+        "uri": "spotify:track:6xZtSE6xaBxmRozKA0F6TA"
+    },
+    "name": "Souls of Gold",
+    "popularity": 9,
+    "preview_url": "https://p.scdn.co/mp3-preview/395647211c33c4c5e1242e1d52c1a2b3b90f3e0f?cid=5398ebe758e8461ba6420deafe1e50c9",
+    "track_number": 10,
+    "type": "track",
+    "uri": "spotify:track:6jm4am2X0KY9EyU1HrPPDu"
+}
