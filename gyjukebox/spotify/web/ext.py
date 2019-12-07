@@ -1,4 +1,6 @@
 import collections
+import logging
+import spotify
 from flask import current_app
 from gyjukebox.spotify.pyspotify import create_logged_in_session
 from gyjukebox.spotify.player import Player
@@ -22,7 +24,11 @@ class SpotifyExt:
         app.config.setdefault("SPOTIFY_CLIENT_ID", None)
         app.config.setdefault("SPOTIFY_CLIENT_SECRET", None)
 
-        session = create_logged_in_session(
+        if spotify._session_instance is not None:
+            logging.warn(
+                "Cannot initialize spotify session twice in same process, reuse previous session"
+            )
+        session = spotify._session_instance or create_logged_in_session(
             app.config["SPOTIFY_USERNAME"], app.config["SPOTIFY_PASSWORD"]
         )
         next_track_queue = NextTrackQueue()

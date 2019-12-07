@@ -16,7 +16,7 @@ def test_login(empty_app):
 
 
 def test_login_jwt(empty_app):
-    login_ext = LoginExt(empty_app)
+    login_ext.init_app(empty_app)
 
     user = User("test_sub", "test_name")
     token = login_ext.get_login_jwt_token(user)
