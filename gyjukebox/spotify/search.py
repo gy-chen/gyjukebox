@@ -143,6 +143,28 @@ class Client:
             raise ValueError(r.reason)
         return r.json()["tracks"]
 
+    def get_playlist_tracks(self, id_or_uri, offset=0):
+        """Get playlist tracks
+
+        Args:
+            id_or_uri (str)
+            offset (int)
+
+        Raises:
+            ValueError: if playlist is not exists
+
+        Returns:
+            list of tracks
+        """
+        id = self._extract_id(id_or_uri)
+        url = f"{self.BASE_URL}/v1/playlists/{id}/tracks"
+        headers = {"Authorization": self._get_authorization_header()}
+        params = {"market": "TW", "offset": offset}
+        r = requests.get(url, params=params, headers=headers)
+        if not r.ok:
+            raise ValueError(r.reason)
+        return r.json()["items"]
+
     def _extract_id(self, id_or_uri):
         componments = id_or_uri.split(":")
         if len(componments) == 3:
