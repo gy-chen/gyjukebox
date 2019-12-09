@@ -24,6 +24,9 @@ def test_non_login(empty_app):
         rv = client.get("/artist/spotify:artist:4pJgbKhO6gZUZDXLQ8deHp/details")
         assert rv.status_code == 403
 
+        rv = client.get("/playlist/spotify:playlist:5TkjKcp6CCUsFVxfgzJGqR/tracks")
+        assert rv.status_code == 403
+
 
 def test_without_error(empty_app, login_token):
     login_ext.init_app(empty_app)
@@ -54,3 +57,7 @@ def test_without_error(empty_app, login_token):
         )
         assert rv.status_code == 200
 
+        rv = client.get(
+            "/playlist/spotify:playlist:5TkjKcp6CCUsFVxfgzJGqR/tracks", headers=headers
+        )
+        assert rv.status_code == 200

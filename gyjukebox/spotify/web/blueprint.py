@@ -66,3 +66,13 @@ def get_artist_details(id_or_uri):
         abort(400)
     return jsonify(tracks=tracks, albums=albums)
 
+
+@bp.route("/playlist/<id_or_uri>/tracks")
+@login_ext.required_login
+def get_playlist_tracks(id_or_uri):
+    offset = request.args.get("offset", 0)
+    try:
+        tracks = spotify_ext.search_client.get_playlist_tracks(id_or_uri, offset)
+    except ValueError:
+        abort(400)
+    return jsonify(tracks=tracks)
