@@ -70,13 +70,34 @@ class Client:
             track information
         """
         id = self._extract_id(id_or_uri)
-        url = f'{self.BASE_URL}/v1/tracks/{id}'
+        url = f"{self.BASE_URL}/v1/tracks/{id}"
         headers = {"Authorization": self._get_authorization_header()}
-        params = {'market': 'TW'}
+        params = {"market": "TW"}
         r = requests.get(url, params=params, headers=headers)
         if not r.ok:
             raise ValueError(r.reason)
         return r.json()
+
+    def get_album_tracks(self, id_or_uri, offset=0):
+        """Get album tracks
+
+        Args:
+            id_or_uri (str)
+
+        Raises:
+            ValueError: if album is not exists
+
+        Returns:
+            list of tracks
+        """
+        id = self._extract_id(id_or_uri)
+        url = f"{self.BASE_URL}/v1/albums/{id}tracks"
+        headers = {"Authorization": self._get_authorization_header()}
+        params = {"market": "TW", "offset": offset}
+        r = requests.get(url, params=params, headers=headers)
+        if not r.ok:
+            raise ValueError(r.reason)
+        return r.json()["items"]
 
     def _extract_id(self, id_or_uri):
         componments = id_or_uri.split(":")
