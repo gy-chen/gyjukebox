@@ -47,8 +47,22 @@ def get_current_track():
 @bp.route("/album/<id_or_uri>/tracks")
 @login_ext.required_login
 def get_album_tracks(id_or_uri):
+    offset = request.args.get("offset", 0)
     try:
-        tracks = spotify_ext.search_client.get_album_tracks(id_or_uri)
+        tracks = spotify_ext.search_client.get_album_tracks(id_or_uri, offset)
     except ValueError:
         abort(400)
     return jsonify(tracks=tracks)
+
+
+@bp.route("/artist/<id_or_uri>/details")
+@login_ext.required_login
+def get_artist_details(id_or_uri):
+    offset = request.args.get("offset", 0)
+    try:
+        tracks = spotify_ext.search_client.get_artist_top_tracks(id_or_uri)
+        albums = spotify_ext.search_client.get_artist_albums(id_or_uri, offset)
+    except ValueError:
+        abort(400)
+    return jsonify(tracks=tracks, albums=albums)
+
