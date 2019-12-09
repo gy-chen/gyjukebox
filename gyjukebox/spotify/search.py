@@ -83,6 +83,7 @@ class Client:
 
         Args:
             id_or_uri (str)
+            offset (int)
 
         Raises:
             ValueError: if album is not exists
@@ -104,6 +105,7 @@ class Client:
 
         Args:
             id_or_uri (str)
+            offset (int)
         
         Raises:
             ValueError: if artist is not exists
@@ -119,6 +121,27 @@ class Client:
         if not r.ok:
             raise ValueError(r.reason)
         return r.json()["items"]
+
+    def get_artist_top_tracks(self, id_or_uri):
+        """Get artist top tracks
+
+        Args:
+            id_or_uri (str)
+
+        Raises:
+            ValueError: if artist is not exists
+
+        Returns:
+            list of tracks
+        """
+        id = self._extract_id(id_or_uri)
+        url = f"{self.BASE_URL}/v1/artists/{id}/top-tracks"
+        headers = {"Authorization": self._get_authorization_header()}
+        params = {"country": "TW"}
+        r = requests.get(url, params=params, headers=headers)
+        if not r.ok:
+            raise ValueError(r.reason)
+        return r.json()["tracks"]
 
     def _extract_id(self, id_or_uri):
         componments = id_or_uri.split(":")

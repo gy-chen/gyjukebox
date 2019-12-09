@@ -25,3 +25,7 @@ def test_get_album_tracks_without_error(client):
 
 def test_get_artist_albums_without_error(client):
     client.get_artist_albums("spotify:artist:4pJgbKhO6gZUZDXLQ8deHp")
+
+
+def test_get_artist_top_tracks_without_error(client):
+    client.get_artist_albums("spotify:artist:4pJgbKhO6gZUZDXLQ8deHp")
