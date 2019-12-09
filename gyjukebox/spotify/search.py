@@ -91,9 +91,30 @@ class Client:
             list of tracks
         """
         id = self._extract_id(id_or_uri)
-        url = f"{self.BASE_URL}/v1/albums/{id}tracks"
+        url = f"{self.BASE_URL}/v1/albums/{id}/tracks"
         headers = {"Authorization": self._get_authorization_header()}
         params = {"market": "TW", "offset": offset}
+        r = requests.get(url, params=params, headers=headers)
+        if not r.ok:
+            raise ValueError(r.reason)
+        return r.json()["items"]
+
+    def get_artist_albums(self, id_or_uri, offset=0):
+        """Get artist albums
+
+        Args:
+            id_or_uri (str)
+        
+        Raises:
+            ValueError: if artist is not exists
+
+        Returns:
+            list of albums
+        """
+        id = self._extract_id(id_or_uri)
+        url = f"{self.BASE_URL}/v1/artists/{id}/albums"
+        headers = {"Authorization": self._get_authorization_header()}
+        params = {"country": "TW", "offset": offset}
         r = requests.get(url, params=params, headers=headers)
         if not r.ok:
             raise ValueError(r.reason)
