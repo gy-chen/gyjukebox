@@ -42,3 +42,13 @@ def enqueue(id_or_uri):
 def get_current_track():
     current_request_track = spotify_ext.player.get_playing_track()
     return jsonify(current_request_track)
+
+
+@bp.route("/album/<id_or_uri>/tracks")
+@login_ext.required_login
+def get_album_tracks(id_or_uri):
+    try:
+        tracks = spotify_ext.search_client.get_album_tracks(id_or_uri)
+    except ValueError:
+        abort(400)
+    return jsonify(tracks=tracks)
