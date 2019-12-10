@@ -31,7 +31,7 @@ def enqueue(id_or_uri):
         track = spotify_ext.search_client.get_track(id_or_uri)
     except ValueError:
         abort(400)
-    track = Track(track["uri"], track["name"], track["duration_ms"])
+    track = Track(track["uri"], track["name"], track["artists"], track["duration_ms"])
     user = login_ext.current_user
     request_track = RequestTrack(track, user)
     spotify_ext.next_track_queue.add_track(request_track)
@@ -45,7 +45,16 @@ def get_current_track():
     current_request_track = spotify_ext.player.get_playing_track()
     if current_request_track is None:
         return jsonify(track=None, user=None)
-    return jsonify(track=current_request_track.track, user=current_request_track.user)
+    track = {
+        "uri": current_request_track.track.uri,
+        "name": current_request_track.track.name,
+        "artists": current_request_track.track.artists,
+        "duration_ms": current_request_track.track.duration_ms
+    }
+    user = {
+        "name": current_request_track.user.name
+    }
+    return jsonify(track=track, user=user)
 
 
 @bp.route("/album/<id_or_uri>/tracks")
