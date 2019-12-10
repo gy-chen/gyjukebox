@@ -60,6 +60,8 @@ class Player(EventEmitter):
             try:
                 self._playing_track = self._load_next_track()
             except _NoNextTrackError:
+                self._track_start_timestamp = None
+                self._playing_track = None
                 return
             self._track_start_timestamp = time.time()
             self.emit('next_track', self._playing_track, self._track_start_timestamp)
@@ -83,6 +85,8 @@ class Player(EventEmitter):
         try:
             self._playing_track = self._load_next_track()
         except _NoNextTrackError:
+            self._track_start_timestamp = None
+            self._playing_track = None
             return
         self._track_start_timestamp = time.time()
         self.emit('next_track', self._playing_track, self._track_start_timestamp)
