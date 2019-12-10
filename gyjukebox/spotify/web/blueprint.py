@@ -4,7 +4,7 @@ from flask import request
 from flask import jsonify
 from gyjukebox.login.web import login_ext
 from gyjukebox.spotify.web import spotify_ext
-from gyjukebox.spotify.model import RequestTrack
+from gyjukebox.spotify.model import RequestTrack, Track
 
 bp = Blueprint("spotify", __name__)
 
@@ -31,9 +31,11 @@ def enqueue(id_or_uri):
         track = spotify_ext.search_client.get_track(id_or_uri)
     except ValueError:
         abort(400)
+    track = Track(track["uri"], track["name"], track["duration_ms"])
     user = login_ext.current_user
     request_track = RequestTrack(track, user)
     spotify_ext.next_track_queue.add_track(request_track)
+    spotify_ext.player.play()
     return "", 204
 
 
