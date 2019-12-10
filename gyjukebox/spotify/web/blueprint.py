@@ -43,7 +43,9 @@ def enqueue(id_or_uri):
 @login_ext.required_login
 def get_current_track():
     current_request_track = spotify_ext.player.get_playing_track()
-    return jsonify(current_request_track)
+    if current_request_track is None:
+        return jsonify(track=None, user=None)
+    return jsonify(track=current_request_track.track, user=current_request_track.user)
 
 
 @bp.route("/album/<id_or_uri>/tracks")
