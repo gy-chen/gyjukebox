@@ -132,3 +132,4 @@ config.py
 .vscode/
 tmp/
 tests/configtest.py
+hls/

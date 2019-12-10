@@ -17,6 +17,8 @@ def create_app(config):
     app.register_blueprint(login_bp)
     app.register_blueprint(spotify_bp)
 
-    # TODO start player
+    with app.app_context():
+        spotify_ext.loop.start()
+        spotify_ext.streaming.start()
 
     return app

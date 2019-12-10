@@ -56,6 +56,9 @@ class SpotifyStreaming:
 
         sink = Gst.ElementFactory.make("hlssink2")
 
+        if hlssink2_options.get("location"):
+            sink.set_property("location", hlssink2_options.get("location"))
+
         if hlssink2_options.get("playlist-root"):
             sink.set_property("playlist-root", hlssink2_options.get("playlist-root"))
 
