@@ -67,6 +67,11 @@ class SpotifyStreaming:
                 "playlist-location", hlssink2_options.get("playlist-location")
             )
 
+        if hlssink2_options.get("target-duration"):
+            sink.set_property(
+                "target-duration", int(hlssink2_options.get("target-duration"))
+            )
+
         # TODO add other hlssink2 options
 
         pipeline.add(appsrc, audioconvert, voaacenc, sink)
