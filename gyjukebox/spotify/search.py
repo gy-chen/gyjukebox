@@ -1,30 +1,46 @@
 import requests
 import base64
+from datetime import timedelta
+from datetime import datetime
 
 
 class Client:
     BASE_URL = "https://api.spotify.com"
 
     def __init__(self, client_id, client_secret):
-        self._access_token = self._exchange_access_token(client_id, client_secret)
+        self._client_id = client_id
+        self._client_secret = client_secret
+        self._access_token = self._exchange_access_token()
+        self._expire_time = None
+
+    def _is_expired(self):
+        if self._expire_time is None:
+            return True
+        return self._expire_time <= datetime.now()
 
     def _encode_client_info(self, client_id, client_secret):
         content = f"{client_id}:{client_secret}"
         return base64.b64encode(content.encode()).decode()
 
-    def _exchange_access_token(self, client_id, client_secret):
+    def _exchange_access_token(self):
         headers = {
-            "Authorization": f"Basic {self._encode_client_info(client_id, client_secret)}"
+            "Authorization": f"Basic {self._encode_client_info(self._client_id, self._client_secret)}"
         }
         data = {"grant_type": "client_credentials"}
         r = requests.post(
             "https://accounts.spotify.com/api/token", data=data, headers=headers
         )
         r.raise_for_status()
-        # TODO need to deal with expires?
-        return r.json()["access_token"]
+        data = r.json()
+        self._expire_time = datetime.now() + timedelta(seconds=data["expires_in"])
+        return data["access_token"]
+
+    def _renew_access_token_if_need(self):
+        if self._is_expired():
+            self._access_token = self._exchange_access_token()
 
     def _get_authorization_header(self):
+        self._renew_access_token_if_need()
         return f"Bearer {self._access_token}"
 
     def search(self, q, offset=0):
