@@ -90,7 +90,7 @@ class Player(EventEmitter):
             return
         self._track_start_timestamp = time.time()
         self.emit('next_track', self._playing_track, self._track_start_timestamp)
-        self.play()
+        self._session.player.play()
 
     def on_end_of_track(self, callback, *user_args):
         self.on('end_of_track', callback, *user_args)
