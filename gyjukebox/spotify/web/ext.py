@@ -31,7 +31,8 @@ class SpotifyExt:
         app.config.setdefault("SPOTIFY_HLS_LOCATION", None)
         app.config.setdefault("SPOTIFY_HLS_PLAYLIST_LOCATION", None)
         app.config.setdefault("SPOTIFY_HLS_PLAYLIST_ROOT", None)
-        app.config.setdefault("SPOTIFY_HLS_TARGET_DURATION", 5)
+        app.config.setdefault("SPOTIFY_HLS_TARGET_DURATION", 6)
+        app.config.setdefault("SPOTIFY_HLS_MAX_FILES", 30)
 
         if spotify._session_instance is not None:
             logging.warn(
@@ -52,7 +53,8 @@ class SpotifyExt:
             "location": app.config["SPOTIFY_HLS_LOCATION"],
             "playlist-location": app.config["SPOTIFY_HLS_PLAYLIST_LOCATION"],
             "playlist-root": app.config["SPOTIFY_HLS_PLAYLIST_ROOT"],
-            "target-duration": app.config["SPOTIFY_HLS_TARGET_DURATION"]
+            "target-duration": app.config["SPOTIFY_HLS_TARGET_DURATION"],
+            "max-files": app.config["SPOTIFY_HLS_MAX_FILES"]
         }
         logging.info(streaming_options)
         streaming = SpotifyStreaming(session, streaming_options)

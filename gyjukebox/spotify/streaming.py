@@ -72,6 +72,9 @@ class SpotifyStreaming:
                 "target-duration", int(hlssink2_options.get("target-duration"))
             )
 
+        if hlssink2_options.get("max-files"):
+            sink.set_property("max-files", int(hlssink2_options.get("max-files")))
+
         # TODO add other hlssink2 options
 
         pipeline.add(appsrc, audioconvert, voaacenc, sink)
