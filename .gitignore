@@ -133,3 +133,4 @@ config.py
 tmp/
 tests/configtest.py
 hls/
+config_test.py
