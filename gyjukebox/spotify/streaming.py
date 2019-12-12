@@ -1,9 +1,13 @@
 import threading
+import logging
 import gi
 import spotify
+from time import time
 
 gi.require_version("Gst", "1.0")
 from gi.repository import GObject, Gst
+
+logger = logging.getLogger(__name__)
 
 
 class SpotifyStreaming:
@@ -26,7 +30,7 @@ class SpotifyStreaming:
         self._session = session
         self._pipeline, self._appsrc = self._create_pipeline(hlssink2_options)
         self._playing = threading.Event()
-        self._timestamp = 0
+        self._timestamp = time() * Gst.SECOND
         self._timestamp_lock = threading.RLock()
         self._session.on(
             spotify.SessionEvent.MUSIC_DELIVERY,
@@ -75,6 +79,11 @@ class SpotifyStreaming:
         if hlssink2_options.get("max-files"):
             sink.set_property("max-files", int(hlssink2_options.get("max-files")))
 
+        if hlssink2_options.get("playlist-length"):
+            sink.set_property(
+                "playlist-length", int(hlssink2_options.get("playlist-length"))
+            )
+
         # TODO add other hlssink2 options
 
         pipeline.add(appsrc, audioconvert, voaacenc, sink)
@@ -84,6 +93,10 @@ class SpotifyStreaming:
         voaacenc.link(sink)
 
         return pipeline, appsrc
+
+    def _is_music_delivery_too_fast(self, duration):
+        with self._timestamp_lock:
+            return self._timestamp + duration > time() * Gst.SECOND
 
     def _on_music_delivery_callback(
         self, session, audio_format, frames, num_frames, playing, appsrc
@@ -103,6 +116,9 @@ class SpotifyStreaming:
         duration = Gst.util_uint64_scale(
             num_frames, Gst.SECOND, audio_format.sample_rate
         )
+        if self._is_music_delivery_too_fast(duration):
+            logger.info("music delivery too fast")
+            return 0
         buffer = Gst.Buffer.new_wrapped(bytes(frames))
         with self._timestamp_lock:
             buffer.pts = self._timestamp
