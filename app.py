@@ -2,7 +2,7 @@ import os
 from gyjukebox.app import create_app
 
 
-if os.environ["FLASK_ENV"] == "development":
+if os.environ.get("FLASK_ENV") == "development":
     import logging
 
     logging.basicConfig(level=logging.DEBUG)
