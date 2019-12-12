@@ -30,7 +30,7 @@ class SpotifyStreaming:
         self._session = session
         self._pipeline, self._appsrc = self._create_pipeline(hlssink2_options)
         self._playing = threading.Event()
-        self._timestamp = time() * Gst.SECOND
+        self._timestamp = None
         self._timestamp_lock = threading.RLock()
         self._session.on(
             spotify.SessionEvent.MUSIC_DELIVERY,
@@ -38,6 +38,7 @@ class SpotifyStreaming:
             self._playing,
             self._appsrc,
         )
+        self._session.on(spotify.SessionEvent.END_OF_TRACK, self._on_end_of_track)
 
     def start(self):
         self._playing.set()
@@ -94,6 +95,11 @@ class SpotifyStreaming:
 
         return pipeline, appsrc
 
+    def _on_end_of_track(self, _):
+        logger.info("end of track, reset timestamp")
+        with self._timestamp_lock:
+            self._timestamp = None
+
     def _is_music_delivery_too_fast(self, duration):
         with self._timestamp_lock:
             return self._timestamp + duration > time() * Gst.SECOND
@@ -101,6 +107,10 @@ class SpotifyStreaming:
     def _on_music_delivery_callback(
         self, session, audio_format, frames, num_frames, playing, appsrc
     ):
+        with self._timestamp_lock:
+            if self._timestamp is None:
+                logger.info("no timestamp, set to current time")
+                self._timestamp = time() * Gst.SECOND
         if not playing.is_set():
             return 0
         if not frames:
