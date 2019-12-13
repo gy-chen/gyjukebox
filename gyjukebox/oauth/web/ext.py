@@ -50,7 +50,7 @@ class OAuth:
 
     def _decode_user_from_id_token(self, id_token):
         _, payload_raw, _ = id_token.split(".")
-        missing_padding = len(payload_raw) % 4
+        missing_padding = 4 - (len(payload_raw) % 4)
         payload_raw_decoded = base64.b64decode(payload_raw + "=" * missing_padding)
         payload = json.loads(payload_raw_decoded)
         return payload
