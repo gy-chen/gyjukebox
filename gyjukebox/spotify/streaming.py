@@ -96,7 +96,7 @@ class SpotifyStreaming:
         return pipeline, appsrc
 
     def _on_end_of_track(self, _):
-        logger.info("end of track, reset timestamp")
+        logger.debug("end of track, reset timestamp")
         with self._timestamp_lock:
             self._timestamp = None
 
@@ -109,7 +109,7 @@ class SpotifyStreaming:
     ):
         with self._timestamp_lock:
             if self._timestamp is None:
-                logger.info("no timestamp, set to current time")
+                logger.debug("no timestamp, set to current time")
                 self._timestamp = time() * Gst.SECOND
         if not playing.is_set():
             return 0
@@ -127,7 +127,7 @@ class SpotifyStreaming:
             num_frames, Gst.SECOND, audio_format.sample_rate
         )
         if self._is_music_delivery_too_fast(duration):
-            logger.info("music delivery too fast")
+            logger.debug("music delivery too fast")
             return 0
         buffer = Gst.Buffer.new_wrapped(bytes(frames))
         with self._timestamp_lock:

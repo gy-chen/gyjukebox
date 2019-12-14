@@ -12,6 +12,8 @@ from gyjukebox.spotify.streaming import SpotifyStreaming
 gi.require_version("Gst", "1.0")
 from gi.repository import GObject, Gst
 
+logger = logging.getLogger(__name__)
+
 _SpotifyExtConfig = collections.namedtuple(
     "SpotifyExtConfig", "session next_track_queue player search_client streaming loop"
 )
@@ -36,7 +38,7 @@ class SpotifyExt:
         app.config.setdefault("SPOTIFY_HLS_MAX_FILES", 30)
 
         if spotify._session_instance is not None:
-            logging.warn(
+            logger.warn(
                 "Cannot initialize spotify session twice in same process, reuse previous session"
             )
         session = spotify._session_instance or create_logged_in_session(
@@ -58,7 +60,7 @@ class SpotifyExt:
             "max-files": app.config["SPOTIFY_HLS_MAX_FILES"],
             "playlist-length": app.config["SPOTIFY_HLS_PLAYLIST_LENGTH"]
         }
-        logging.info(streaming_options)
+        logger.debug(streaming_options)
         streaming = SpotifyStreaming(session, streaming_options)
         loop = spotify.EventLoop(session)
 
