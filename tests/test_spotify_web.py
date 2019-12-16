@@ -15,6 +15,12 @@ def test_non_login(empty_app):
         rv = client.post("/track/spotify:track:6xZtSE6xaBxmRozKA0F6TA/enqueue")
         assert rv.status_code == 403
 
+        rv = client.post("/album/spotify:album:2rjea3kk4YC0VSCBN1ITO5/enqueue")
+        assert rv.status_code == 403
+
+        rv = client.post("/playlist/spotify:playlist:1Yz4CVrVafRVn34o9zNYOs/enqueue")
+        assert rv.status_code == 403
+
         rv = client.get("/track/current")
         assert rv.status_code == 403
 
@@ -41,6 +47,16 @@ def test_without_error(empty_app, login_token):
 
         rv = client.post(
             "/track/spotify:track:6xZtSE6xaBxmRozKA0F6TA/enqueue", headers=headers
+        )
+        assert rv.status_code == 204
+
+        rv = client.post(
+            "/album/spotify:album:2rjea3kk4YC0VSCBN1ITO5/enqueue", headers=headers
+        )
+        assert rv.status_code == 204
+
+        rv = client.post(
+            "/playlist/spotify:playlist:1Yz4CVrVafRVn34o9zNYOs/enqueue", headers=headers
         )
         assert rv.status_code == 204
 

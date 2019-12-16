@@ -40,7 +40,7 @@ class SpotifyExt:
         app.config.setdefault("SPOTIFY_QUEUE_TYPE", "RoundRobinNextTrackQueue")
 
         if spotify._session_instance is not None:
-            logger.warn(
+            logger.warning(
                 "Cannot initialize spotify session twice in same process, reuse previous session"
             )
         session = spotify._session_instance or create_logged_in_session(

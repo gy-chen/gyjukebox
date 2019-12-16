@@ -26,7 +26,7 @@ def search():
 
 @bp.route("/track/<id_or_uri>/enqueue", methods=["POST"])
 @login_ext.required_login
-def enqueue(id_or_uri):
+def track_enqueue(id_or_uri):
     try:
         track = spotify_ext.search_client.get_track(id_or_uri)
     except ValueError:
@@ -35,6 +35,55 @@ def enqueue(id_or_uri):
     user = login_ext.current_user
     request_track = RequestTrack(track, user)
     spotify_ext.next_track_queue.add_track(request_track)
+    spotify_ext.player.play()
+    return "", 204
+
+
+@bp.route("/album/<id_or_uri>/enqueue", methods=["POST"])
+@login_ext.required_login
+def album_enqueue(id_or_uri):
+    offset = 0
+    tracks = True
+    while tracks:
+        try:
+            tracks = spotify_ext.search_client.get_album_tracks(id_or_uri, offset)
+        except ValueError:
+            abort(400)
+        for track in tracks:
+            track = Track(
+                track["uri"], track["name"], track["artists"], track["duration_ms"]
+            )
+            user = login_ext.current_user
+            request_track = RequestTrack(track, user)
+            spotify_ext.next_track_queue.add_track(request_track)
+        # spotify default album tracks limit
+        offset += 20
+    spotify_ext.player.play()
+    return "", 204
+
+
+@bp.route("/playlist/<id_or_uri>/enqueue", methods=["POST"])
+@login_ext.required_login
+def playlist_enqueue(id_or_uri):
+    offset = 0
+    playlist_tracks = True
+    while playlist_tracks:
+        try:
+            playlist_tracks = spotify_ext.search_client.get_playlist_tracks(
+                id_or_uri, offset
+            )
+        except ValueError:
+            abort(400)
+        for playlist_track in playlist_tracks:
+            track = playlist_track["track"]
+            track = Track(
+                track["uri"], track["name"], track["artists"], track["duration_ms"]
+            )
+            user = login_ext.current_user
+            request_track = RequestTrack(track, user)
+            spotify_ext.next_track_queue.add_track(request_track)
+        # spotify default playlist tracks limit
+        offset += 100
     spotify_ext.player.play()
     return "", 204
 
@@ -49,11 +98,9 @@ def get_current_track():
         "uri": current_request_track.track.uri,
         "name": current_request_track.track.name,
         "artists": current_request_track.track.artists,
-        "duration_ms": current_request_track.track.duration_ms
+        "duration_ms": current_request_track.track.duration_ms,
     }
-    user = {
-        "name": current_request_track.user.name
-    }
+    user = {"name": current_request_track.user.name}
     return jsonify(track=track, user=user)
 
 
