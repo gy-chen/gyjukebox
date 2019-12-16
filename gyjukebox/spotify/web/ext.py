@@ -5,9 +5,10 @@ import gi
 from flask import current_app
 from gyjukebox.spotify.pyspotify import create_logged_in_session
 from gyjukebox.spotify.player import Player
-from gyjukebox.spotify.player import NextTrackQueue
 from gyjukebox.spotify.search import Client as SearchClient
 from gyjukebox.spotify.streaming import SpotifyStreaming
+from gyjukebox.spotify.next_track_queue import RoundRobinNextTrackQueue
+from gyjukebox.spotify.next_track_queue import SimpleNextTrackQueue
 
 gi.require_version("Gst", "1.0")
 from gi.repository import GObject, Gst
@@ -36,6 +37,7 @@ class SpotifyExt:
         app.config.setdefault("SPOTIFY_HLS_PLAYLIST_LENGTH", 20)
         app.config.setdefault("SPOTIFY_HLS_TARGET_DURATION", 6)
         app.config.setdefault("SPOTIFY_HLS_MAX_FILES", 30)
+        app.config.setdefault("SPOTIFY_QUEUE_TYPE", "RoundRobinNextTrackQueue")
 
         if spotify._session_instance is not None:
             logger.warn(
@@ -44,7 +46,14 @@ class SpotifyExt:
         session = spotify._session_instance or create_logged_in_session(
             app.config["SPOTIFY_USERNAME"], app.config["SPOTIFY_PASSWORD"]
         )
-        next_track_queue = NextTrackQueue()
+        if app.config["SPOTIFY_QUEUE_TYPE"] == "RoundRobinNextTrackQueue":
+            logger.info("use RoundRobinNextTrackQueue")
+            next_track_queue = RoundRobinNextTrackQueue()
+        elif app.config["SPOTIFY_QUEUE_TYPE"] == "SimpleNextTrackQueue":
+            logger.info("use SimpleNextTrackQueue")
+            next_track_queue = SimpleNextTrackQueue()
+        else:
+            raise ValueError(f"Unsupport queue type {app.config['SPOTIFY_QUEUE_TYPE']}")
         player = Player(session, next_track_queue)
         search_client = SearchClient(
             app.config["SPOTIFY_CLIENT_ID"], app.config["SPOTIFY_CLIENT_SECRET"]
@@ -58,7 +67,7 @@ class SpotifyExt:
             "playlist-root": app.config["SPOTIFY_HLS_PLAYLIST_ROOT"],
             "target-duration": app.config["SPOTIFY_HLS_TARGET_DURATION"],
             "max-files": app.config["SPOTIFY_HLS_MAX_FILES"],
-            "playlist-length": app.config["SPOTIFY_HLS_PLAYLIST_LENGTH"]
+            "playlist-length": app.config["SPOTIFY_HLS_PLAYLIST_LENGTH"],
         }
         logger.debug(streaming_options)
         streaming = SpotifyStreaming(session, streaming_options)

@@ -5,38 +5,9 @@ import threading
 import spotify
 from spotify.player import PlayerState
 from spotify.utils import EventEmitter
+from gyjukebox.spotify.next_track_queue import NoNextTrackError
 
 logger = logging.getLogger(__name__)
-
-
-class NextTrackQueue:
-    def __init__(self):
-        self._queue = queue.Queue()
-
-    def add_track(self, request_track):
-        """Add track to the queue
-
-        Args:
-            request_track: gyjukebox.spotify.model.RequestTrack
-        """
-        logger.info("Add track %s", request_track)
-        self._queue.put(request_track)
-
-    def next_track(self):
-        """Get next track to play
-
-        Returns:
-            gyjukebox.spotify.model.RequestTrack
-        """
-        try:
-            logger.info("Try to next tract")
-            return self._queue.get(False)
-        except queue.Empty:
-            logger.info("No next track")
-            raise _NoNextTrackError()
-
-    def size(self):
-        return self._queue.qsize()
 
 
 class Player(EventEmitter):
@@ -44,7 +15,7 @@ class Player(EventEmitter):
 
     Args:
         session (spotify.Session)
-        queue (gyjukebox.spotify.player.NextTrackQueue)
+        queue (gyjukebox.spotify.next_track_queue.NextTrackQueue)
     """
 
     def __init__(self, session, queue):
@@ -74,7 +45,7 @@ class Player(EventEmitter):
                 try:
                     self._playing_track = self._load_next_track()
                     logger.info("Got next track %s", self._playing_track)
-                except _NoNextTrackError:
+                except NoNextTrackError:
                     self._track_start_timestamp = None
                     self._playing_track = None
                     return
@@ -112,7 +83,7 @@ class Player(EventEmitter):
             try:
                 self._playing_track = self._load_next_track()
                 logger.info("Got next track %s", self._playing_track)
-            except _NoNextTrackError:
+            except NoNextTrackError:
                 self._track_start_timestamp = None
                 self._playing_track = None
                 return
@@ -127,7 +98,3 @@ class Player(EventEmitter):
 
     def on_next_track(self, callback, *user_args):
         self.on("next_track", callback, *user_args)
-
-
-class _NoNextTrackError(Exception):
-    pass
