@@ -73,10 +73,10 @@ class Player(EventEmitter):
 
     def _on_end_of_track(self, _):
         self.emit("end_of_track", self._playing_track)
-        logger.info("End of track")
-        logger.info("Current player state: %s", self._session.player.state)
+        logger.debug("End of track")
+        logger.debug("Current player state: %s", self._session.player.state)
         if not self._changing_song_lock.acquire(blocking=False):
-            logger.info("cannot acquire changing song lock, do nothing")
+            logger.debug("cannot acquire changing song lock, do nothing")
             return
         try:
             self._track_start_timestamp = None

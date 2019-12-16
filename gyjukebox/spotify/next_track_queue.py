@@ -37,15 +37,15 @@ class SimpleNextTrackQueue(BaseNextTrackQueue):
         self._queue = queue.Queue()
 
     def add_track(self, request_track):
-        logger.info("Add track %s", request_track)
+        logger.debug("Add track %s", request_track)
         self._queue.put(request_track)
 
     def next_track(self):
         try:
-            logger.info("Try to load next track")
+            logger.debug("Try to load next track")
             return self._queue.get(False)
         except queue.Empty:
-            logger.info("No next track")
+            logger.debug("No next track")
             raise NoNextTrackError()
 
     def size(self):
@@ -70,12 +70,12 @@ class RoundRobinNextTrackQueue(BaseNextTrackQueue):
         self._q[i] = item
 
     def next_track(self):
-        logger.info("Try to load next track")
+        logger.debug("Try to load next track")
         if not self._q:
             raise NoNextTrackError()
         for item in self._q[self._current_index :] + self._q[: self._current_index]:
             if len(item) == 1:
-                logger.info(
+                logger.debug(
                     "All tracks requested by user %s has played, continue to next one",
                     item[0],
                 )
@@ -86,7 +86,7 @@ class RoundRobinNextTrackQueue(BaseNextTrackQueue):
             self._current_index += 1
             self._current_index %= len(self._q)
             return item[1]
-        logger.info("No next track")
+        logger.debug("No next track")
         raise NoNextTrackError()
 
     def size(self):
