@@ -13,7 +13,8 @@ bp = Blueprint("login", __name__)
 
 @bp.route("/login")
 def login():
-    authorization_url = oauth_ext.get_authorization_url()
+    google_provider = oauth_ext.google_provider
+    authorization_url = google_provider.get_authorization_url()
     callback_url = request.args.get("callback_url")
     if login_ext.is_valid_callback_url(callback_url):
         session["login_callback_url"] = callback_url
@@ -22,7 +23,8 @@ def login():
 
 @bp.route("/login/callback")
 def login_callback():
-    oauth_user = oauth_ext.fetch_user()
+    google_provider = oauth_ext.google_provider
+    oauth_user = google_provider.fetch_user()
     user = User(oauth_user["sub"], oauth_user["name"])
     token = login_ext.get_login_jwt_token(user)
 

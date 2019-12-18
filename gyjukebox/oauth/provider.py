@@ -12,6 +12,7 @@ class BaseOAuthProvider:
         authorization_url
         token_url
         refresh_url
+        user_url
         redirect_uri
         scope
 
@@ -28,6 +29,7 @@ class BaseOAuthProvider:
         self._authorization_url = options.get("authorization_url")
         self._token_url = options.get("token_url")
         self._refresh_url = options.get("refresh_url")
+        self._user_url = options.get("user_url")
         self._redirect_uri = options.get("redirect_uri")
         self._scope = options.get("scope")
 
@@ -48,6 +50,9 @@ class BaseOAuthProvider:
     def refresh_token(self, token):
         return NotImplemented
 
+    def fetch_user(self, token):
+        return NotImplemented
+
 
 class GoogleOAuthProvider(BaseOAuthProvider):
     def __init__(self, state_saver, options={}):
@@ -58,6 +63,18 @@ class GoogleOAuthProvider(BaseOAuthProvider):
         }
         options_.update(options)
         super().__init__(state_saver, options_)
+
+    def fetch_user(self, token):
+        return self._decode_user_from_id_token(token["id_token"])
+
+    def _decode_user_from_id_token(self, id_token):
+        _, payload_raw, _ = id_token.split(".")
+        missing_padding = 4 - (len(payload_raw) % 4)
+        payload_raw_decoded = base64.urlsafe_b64decode(
+            payload_raw + "=" * missing_padding
+        )
+        payload = json.loads(payload_raw_decoded)
+        return payload
 
 
 class SpotifyOAuthProvider(BaseOAuthProvider):
@@ -78,3 +95,7 @@ class SpotifyOAuthProvider(BaseOAuthProvider):
             code=token["refresh_token"],
             client_secret=self._client_secret,
         )
+
+    def fetch_user(self, token):
+        sess = OAuth2Session(self._client_id, token=token)
+        return sess.get("https://api.spotify.com/v1/me")

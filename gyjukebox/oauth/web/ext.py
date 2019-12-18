@@ -1,7 +1,13 @@
 import base64
+import collections
 import json
 from flask import current_app, session, request
 from requests_oauthlib import OAuth2Session
+from gyjukebox.oauth.web.state_saver import SessionStateSaver
+from gyjukebox.oauth.provider import GoogleOAuthProvider
+from gyjukebox.oauth.provider import SpotifyOAuthProvider
+
+_OAuthConfig = collections.namedtuple("OAuthConfig", "google_provider spotify_provider")
 
 
 class OAuth:
@@ -15,42 +21,51 @@ class OAuth:
         return current_app
 
     def init_app(self, app):
-        app.config.setdefault("OAUTH_CLIENT_ID", None)
-        app.config.setdefault("OAUTH_CLIENT_SECRET", None)
-        app.config.setdefault("OAUTH_AUTHORIZATION_BASE_URL", None)
-        app.config.setdefault("OAUTH_TOKEN_URL", None)
-        app.config.setdefault("OAUTH_REDIRECT_URI", None)
-        app.config.setdefault("OAUTH_SCOPE", "openid email")
+        app.config.setdefault("OAUTH_GOOGLE_CLIENT_ID", None)
+        app.config.setdefault("OAUTH_GOOGLE_CLIENT_SECRET", None)
+        app.config.setdefault("OAUTH_GOOGLE_REDIRECT_URI", None)
 
-    def get_authorization_url(self, callback_url=None):
-        sess = OAuth2Session(
-            self.app.config["OAUTH_CLIENT_ID"],
-            redirect_uri=callback_url or self.app.config["OAUTH_REDIRECT_URI"],
-            scope=self.app.config["OAUTH_SCOPE"],
-        )
-        authorization_url, state = sess.authorization_url(
-            self.app.config["OAUTH_AUTHORIZATION_BASE_URL"]
-        )
-        session["OAUTH_STATE"] = state
-        return authorization_url
+        app.config.setdefault("OAUTH_SPOTIFY_CLIENT_ID", None)
+        app.config.setdefault("OAUTH_SPOTIFY_CLIENT_SECRET", None)
+        app.config.setdefault("OAUTH_SPOTIFY_REDIRECT_URI", None)
 
-    def fetch_user(self):
-        sess = OAuth2Session(
-            self.app.config["OAUTH_CLIENT_ID"],
-            state=session["OAUTH_STATE"],
-            redirect_uri=self.app.config["OAUTH_REDIRECT_URI"],
-        )
-        token = sess.fetch_token(
-            self.app.config["OAUTH_TOKEN_URL"],
-            client_secret=self.app.config["OAUTH_CLIENT_SECRET"],
-            authorization_response=request.url,
-        )
-        id_token = token["id_token"]
-        return self._decode_user_from_id_token(id_token)
+        state_saver = SessionStateSaver()
 
-    def _decode_user_from_id_token(self, id_token):
-        _, payload_raw, _ = id_token.split(".")
-        missing_padding = 4 - (len(payload_raw) % 4)
-        payload_raw_decoded = base64.urlsafe_b64decode(payload_raw + "=" * missing_padding)
-        payload = json.loads(payload_raw_decoded)
-        return payload
+        google_oauth_options = {}
+        if app.config.get("OAUTH_GOOGLE_CLIENT_ID"):
+            google_oauth_options["client_id"] = app.config["OAUTH_GOOGLE_CLIENT_ID"]
+        if app.config.get("OAUTH_GOOGLE_CLIENT_SECRET"):
+            google_oauth_options["client_secret"] = app.config[
+                "OAUTH_GOOGLE_CLIENT_SECRET"
+            ]
+        if app.config.get("OAUTH_GOOGLE_REDIRECT_URI"):
+            google_oauth_options["redirect_uri"] = app.config[
+                "OAUTH_GOOGLE_REDIRECT_URI"
+            ]
+        google_oauth_provider = GoogleOAuthProvider(state_saver, google_oauth_options)
+
+        spotify_oauth_options = {}
+        if app.config.get("OAUTH_SPOTIFY_CLIENT_ID"):
+            spotify_oauth_options["client_id"] = app.config["OAUTH_SPOTIFY_CLIENT_ID"]
+        if app.config.get("OAUTH_SPOTIFY_CLIENT_SECRET"):
+            spotify_oauth_options["client_secret"] = app.config[
+                "OAUTH_SPOTIFY_CLIENT_SECRET"
+            ]
+        if app.config.get("OAUTH_SPOTIFY_REDIRECT_URI"):
+            spotify_oauth_options["redirect_uri"] = app.config[
+                "OAUTH_SPOTIFY_REDIRECT_URI"
+            ]
+        spotify_oauth_provider = SpotifyOAuthProvider(
+            state_saver, spotify_oauth_options
+        )
+
+        oauth_config = _OAuthConfig(google_oauth_provider, spotify_oauth_provider)
+        app.extensions["oauth_ext"] = oauth_config
+
+    @property
+    def google_provider(self):
+        return self.app.extensions["oauth_ext"].google_provider
+
+    @property
+    def spotify_provider(self):
+        return self.app.extensions["oauth_ext"].spotify_provider
