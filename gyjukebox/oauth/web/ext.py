@@ -78,7 +78,7 @@ class OAuth:
         Args:
             user (gyjukebox.user.model.User)
         """
-        sub = user["sub"]
+        sub = user.sub
         if sub.startswith("spotify"):
             return InMemoryTokenSaver(sub)
         return NoSaveTokenSaver()

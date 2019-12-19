@@ -89,17 +89,17 @@ class SpotifyOAuthProvider(BaseOAuthProvider):
             "authorization_url": "https://accounts.spotify.com/authorize",
             "token_url": "https://accounts.spotify.com/api/token",
             "refresh_url": "https://accounts.spotify.com/api/token",
-            "scope": "user-read-email",
+            "scope": "user-read-email user-top-read playlist-read-private user-follow-read user-library-read",
         }
         options_.update(options)
         super().__init__(state_saver, options_)
 
     def refresh_token(self, token):
-        sess = OAuth2Session(self._client_id)
-        return sess.fetch_token(
-            self._token_url,
-            code=token["refresh_token"],
-            client_secret=self._client_secret,
+        sess = OAuth2Session(self._client_id, token=token)
+        return sess.refresh_token(
+            self._refresh_url,
+            client_id=self._client_id,
+            client_secret=self._client_secret
         )
 
     def fetch_user(self, token):
