@@ -90,6 +90,72 @@ class BaseClient:
         """
         return NotImplemented
 
+    def get_user_top_artists(self, offset=0):
+        """Get user's top artists
+
+        Args:
+            offset (int)
+
+        Returns:
+            list of artists
+        """
+        return NotImplemented
+
+    def get_user_top_tracks(self, offset=0):
+        """Get user's top tracks
+
+        Args:
+            offset (int)
+
+        Returns:
+            list of tracks
+        """
+        return NotImplemented
+
+    def get_user_playlists(self, offset=0):
+        """Get user's saved playlists
+
+        Args:
+            offset (int)
+
+        Returns:
+            list of playlists
+        """
+        return NotImplemented
+
+    def get_user_albums(self, offset=0):
+        """Get user's saved albums
+
+        Args:
+            offset (int)
+
+        Returns:
+            list of albums
+        """
+        return NotImplemented
+
+    def get_user_artists(self, offset=0):
+        """Get user's saved artists
+
+        Args:
+            offset (int)
+
+        Returns:
+            list of artists
+        """
+        return NotImplemented
+
+    def get_user_tracks(self, offset=0):
+        """Get user's saved tracks
+
+        Args:
+            offset (int)
+
+        Returns:
+            list of tracks
+        """
+        return NotImplemented
+
 
 class Client(BaseClient):
     BASE_URL = "https://api.spotify.com"
@@ -129,6 +195,12 @@ class Client(BaseClient):
     def _get_authorization_header(self):
         self._renew_access_token_if_need()
         return f"Bearer {self._access_token}"
+
+    def _extract_id(self, id_or_uri):
+        componments = id_or_uri.split(":")
+        if len(componments) == 3:
+            return componments[-1]
+        return id_or_uri
 
     def search(self, q, offset=0):
         url = f"{self.BASE_URL}/v1/search"
@@ -201,8 +273,20 @@ class Client(BaseClient):
             raise ValueError(r.reason)
         return r.json()["items"]
 
-    def _extract_id(self, id_or_uri):
-        componments = id_or_uri.split(":")
-        if len(componments) == 3:
-            return componments[-1]
-        return id_or_uri
+    def get_user_top_artists(self, offset=0):
+        return None
+
+    def get_user_top_tracks(self, offset=0):
+        return None
+
+    def get_user_playlists(self, offset=0):
+        return None
+
+    def get_user_albums(self, offset=0):
+        return None
+
+    def get_user_artists(self, offset=0):
+        return None
+
+    def get_user_tracks(self, offset=0):
+        return None

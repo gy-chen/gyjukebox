@@ -33,3 +33,12 @@ def test_get_artist_top_tracks_without_error(client):
 
 def test_get_playlist_tracks_without_error(client):
     client.get_playlist_tracks("spotify:playlist:5TkjKcp6CCUsFVxfgzJGqR")
+
+
+def test_unsupport_search(client):
+    assert client.get_user_top_artists() is None
+    assert client.get_user_top_tracks() is None
+    assert client.get_user_playlists() is None
+    assert client.get_user_albums() is None
+    assert client.get_user_artists() is None
+    assert client.get_user_tracks() is None
