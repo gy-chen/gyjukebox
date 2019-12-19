@@ -42,9 +42,15 @@ class BaseOAuthProvider:
         return authorization_url
 
     def fetch_token(self, response_url):
-        sess = OAuth2Session(self._client_id, state=self._state_saver.get())
+        sess = OAuth2Session(
+            self._client_id,
+            redirect_uri=self._redirect_uri,
+            state=self._state_saver.get(),
+        )
         return sess.fetch_token(
-            self._token_url, self._client_secret, authorization_response=response_url
+            self._token_url,
+            client_secret=self._client_secret,
+            authorization_response=response_url,
         )
 
     def refresh_token(self, token):
@@ -98,4 +104,4 @@ class SpotifyOAuthProvider(BaseOAuthProvider):
 
     def fetch_user(self, token):
         sess = OAuth2Session(self._client_id, token=token)
-        return sess.get("https://api.spotify.com/v1/me")
+        return sess.get("https://api.spotify.com/v1/me").json()

@@ -11,21 +11,46 @@ from gyjukebox.user.model import User
 bp = Blueprint("login", __name__)
 
 
-@bp.route("/login")
-def login():
+@bp.route("/login/google")
+def google_login():
     google_provider = oauth_ext.google_provider
     authorization_url = google_provider.get_authorization_url()
+    return _login(authorization_url)
+
+
+@bp.route("/login/google/callback")
+def google_login_callback():
+    google_provider = oauth_ext.google_provider
+    token = google_provider.fetch_token(request.url)
+    oauth_user = google_provider.fetch_user(token)
+    user = User(oauth_user["sub"], oauth_user["name"])
+    return _login_callback(user)
+
+
+@bp.route("/login/spotify")
+def spotify_login():
+    spotify_provider = oauth_ext.spotify_provider
+    authorization_url = spotify_provider.get_authorization_url()
+    return _login(authorization_url)
+
+
+@bp.route("/login/spotify/callback")
+def spotify_login_callback():
+    spotify_provider = oauth_ext.spotify_provider
+    token = spotify_provider.fetch_token(request.url)
+    oauth_user = spotify_provider.fetch_user(token)
+    user = User(oauth_user["uri"], oauth_user["display_name"])
+    return _login_callback(user)
+
+
+def _login(authorization_url):
     callback_url = request.args.get("callback_url")
     if login_ext.is_valid_callback_url(callback_url):
         session["login_callback_url"] = callback_url
     return redirect(authorization_url)
 
 
-@bp.route("/login/callback")
-def login_callback():
-    google_provider = oauth_ext.google_provider
-    oauth_user = google_provider.fetch_user()
-    user = User(oauth_user["sub"], oauth_user["name"])
+def _login_callback(user):
     token = login_ext.get_login_jwt_token(user)
 
     callback_url = session.get("login_callback_url")
