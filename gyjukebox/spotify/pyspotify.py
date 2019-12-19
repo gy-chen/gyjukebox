@@ -37,4 +37,3 @@ def create_logged_in_session(username, password):
     loop.stop()
 
     return session
-

@@ -136,3 +136,59 @@ def get_playlist_tracks(id_or_uri):
     except ValueError:
         abort(400)
     return jsonify(tracks=tracks)
+
+
+@bp.route("/me/top")
+@login_ext.required_login
+def get_user_top():
+    offset = request.args.get("offset", 0)
+    try:
+        top_artists = spotify_ext.search_client.get_user_top_artists(offset)
+        top_tracks = spotify_ext.search_client.get_user_top_tracks(offset)
+    except ValueError:
+        abort(400)
+    return jsonify(artists=top_artists, tracks=top_tracks)
+
+
+@bp.route("/me/playlists")
+@login_ext.required_login
+def get_user_playlists():
+    offset = request.args.get("offset", 0)
+    try:
+        user_playlists = spotify_ext.search_client.get_user_playlists(offset)
+    except ValueError:
+        abort(400)
+    return jsonify(playlists=user_playlists)
+
+
+@bp.route("/me/albums")
+@login_ext.required_login
+def get_user_albums():
+    offset = request.args.get("offset", 0)
+    try:
+        user_albums = spotify_ext.search_client.get_user_albums(offset)
+    except ValueError:
+        abort(400)
+    return jsonify(albums=user_albums)
+
+
+@bp.route("/me/artists")
+@login_ext.required_login
+def get_user_artists():
+    after = request.args.get("after", None)
+    try:
+        user_artists = spotify_ext.search_client.get_user_artists(after)
+    except ValueError:
+        abort(400)
+    return jsonify(artists=user_artists)
+
+
+@bp.route("/me/tracks")
+@login_ext.required_login
+def get_user_tracks():
+    offset = request.args.get("offset", 0)
+    try:
+        user_tracks = spotify_ext.search_client.get_user_tracks(offset)
+    except ValueError:
+        abort(400)
+    return jsonify(tracks=user_tracks)

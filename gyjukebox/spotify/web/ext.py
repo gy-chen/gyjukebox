@@ -3,12 +3,16 @@ import logging
 import spotify
 import gi
 from flask import current_app
+from flask import _app_ctx_stack
 from gyjukebox.spotify.pyspotify import create_logged_in_session
 from gyjukebox.spotify.player import Player
 from gyjukebox.spotify.search import Client as SearchClient
+from gyjukebox.spotify.search import OAuthClient as OAuthSearchClient
 from gyjukebox.spotify.streaming import SpotifyStreaming
 from gyjukebox.spotify.next_track_queue import RoundRobinNextTrackQueue
 from gyjukebox.spotify.next_track_queue import SimpleNextTrackQueue
+from gyjukebox.oauth.web import oauth_ext
+from gyjukebox.login.web import login_ext
 
 gi.require_version("Gst", "1.0")
 from gi.repository import GObject, Gst
@@ -16,7 +20,7 @@ from gi.repository import GObject, Gst
 logger = logging.getLogger(__name__)
 
 _SpotifyExtConfig = collections.namedtuple(
-    "SpotifyExtConfig", "session next_track_queue player search_client streaming loop"
+    "SpotifyExtConfig", "session next_track_queue player streaming loop"
 )
 
 
@@ -55,9 +59,6 @@ class SpotifyExt:
         else:
             raise ValueError(f"Unsupport queue type {app.config['SPOTIFY_QUEUE_TYPE']}")
         player = Player(session, next_track_queue)
-        search_client = SearchClient(
-            app.config["SPOTIFY_CLIENT_ID"], app.config["SPOTIFY_CLIENT_SECRET"]
-        )
 
         Gst.init([])
 
@@ -74,7 +75,7 @@ class SpotifyExt:
         loop = spotify.EventLoop(session)
 
         spotify_ext_config = _SpotifyExtConfig(
-            session, next_track_queue, player, search_client, streaming, loop
+            session, next_track_queue, player, streaming, loop
         )
         app.extensions["spotify_ext"] = spotify_ext_config
 
@@ -94,9 +95,25 @@ class SpotifyExt:
     def player(self):
         return self.app.extensions["spotify_ext"].player
 
+    def get_search_client(self, user):
+        sub = user.sub
+        if sub.startswith("spotify"):
+            token_saver = oauth_ext.get_token_saver(user)
+            return OAuthSearchClient(oauth_ext.spotify_provider, token_saver)
+        return SearchClient(
+            self.app.config["SPOTIFY_CLIENT_ID"],
+            self.app.config["SPOTIFY_CLIENT_SECRET"],
+        )
+
     @property
     def search_client(self):
-        return self.app.extensions["spotify_ext"].search_client
+        ctx = _app_ctx_stack.top
+        if ctx is not None:
+            if not hasattr(ctx, "spotify_ext_search_client"):
+                ctx.spotify_ext_search_client = self.get_search_client(
+                    login_ext.current_user
+                )
+            return ctx.spotify_ext_search_client
 
     @property
     def streaming(self):
