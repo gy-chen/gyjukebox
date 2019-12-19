@@ -1,11 +1,11 @@
 import pytest
-import configtest
+import config_test
 from gyjukebox.spotify.search import Client
 
 
 @pytest.fixture()
 def client():
-    return Client(configtest.SPOTIFY_CLIENT_ID, configtest.SPOTIFY_CLIENT_SECRET)
+    return Client(config_test.SPOTIFY_CLIENT_ID, config_test.SPOTIFY_CLIENT_SECRET)
 
 
 def test_search_without_error(client):

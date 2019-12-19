@@ -4,7 +4,94 @@ from datetime import timedelta
 from datetime import datetime
 
 
-class Client:
+class BaseClient:
+    def search(self, q, offset=0):
+        """Search for albums, artists, tracks, playlists
+
+        Args:
+            q (str)
+            offset (int)
+
+        Returns:
+            (albums, artists, tracks, playlists)
+        """
+        return NotImplemented
+
+    def get_track(self, id_or_uri):
+        """Get track information
+
+        Args:
+            id_or_uri (str)
+
+        Raises:
+            ValueError: if track is not exists
+
+        Returns:
+            track information
+        """
+        return NotImplemented
+
+    def get_album_tracks(self, id_or_uri, offset=0):
+        """Get album tracks
+
+        Args:
+            id_or_uri (str)
+            offset (int)
+
+        Raises:
+            ValueError: if album is not exists
+
+        Returns:
+            list of tracks
+        """
+        return NotImplemented
+
+    def get_artist_albums(self, id_or_uri, offset=0):
+        """Get artist albums
+
+        Args:
+            id_or_uri (str)
+            offset (int)
+        
+        Raises:
+            ValueError: if artist is not exists
+
+        Returns:
+            list of albums
+        """
+        return NotImplemented
+
+    def get_artist_top_tracks(self, id_or_uri):
+        """Get artist top tracks
+
+        Args:
+            id_or_uri (str)
+
+        Raises:
+            ValueError: if artist is not exists
+
+        Returns:
+            list of tracks
+        """
+        return NotImplemented
+
+    def get_playlist_tracks(self, id_or_uri, offset=0):
+        """Get playlist tracks
+
+        Args:
+            id_or_uri (str)
+            offset (int)
+
+        Raises:
+            ValueError: if playlist is not exists
+
+        Returns:
+            list of tracks
+        """
+        return NotImplemented
+
+
+class Client(BaseClient):
     BASE_URL = "https://api.spotify.com"
 
     def __init__(self, client_id, client_secret):
@@ -44,15 +131,6 @@ class Client:
         return f"Bearer {self._access_token}"
 
     def search(self, q, offset=0):
-        """Search for albums, artists, tracks, playlists
-
-        Args:
-            q (str)
-            offset (int)
-
-        Returns:
-            (albums, artists, tracks, playlists)
-        """
         url = f"{self.BASE_URL}/v1/search"
         headers = {"Authorization": self._get_authorization_header()}
         params = {
@@ -74,17 +152,6 @@ class Client:
         return albums, artists, tracks, playlists
 
     def get_track(self, id_or_uri):
-        """Get track information
-
-        Args:
-            id_or_uri (str)
-
-        Raises:
-            ValueError: if track is not exists
-
-        Returns:
-            track information
-        """
         id = self._extract_id(id_or_uri)
         url = f"{self.BASE_URL}/v1/tracks/{id}"
         headers = {"Authorization": self._get_authorization_header()}
@@ -95,18 +162,6 @@ class Client:
         return r.json()
 
     def get_album_tracks(self, id_or_uri, offset=0):
-        """Get album tracks
-
-        Args:
-            id_or_uri (str)
-            offset (int)
-
-        Raises:
-            ValueError: if album is not exists
-
-        Returns:
-            list of tracks
-        """
         id = self._extract_id(id_or_uri)
         url = f"{self.BASE_URL}/v1/albums/{id}/tracks"
         headers = {"Authorization": self._get_authorization_header()}
@@ -117,18 +172,6 @@ class Client:
         return r.json()["items"]
 
     def get_artist_albums(self, id_or_uri, offset=0):
-        """Get artist albums
-
-        Args:
-            id_or_uri (str)
-            offset (int)
-        
-        Raises:
-            ValueError: if artist is not exists
-
-        Returns:
-            list of albums
-        """
         id = self._extract_id(id_or_uri)
         url = f"{self.BASE_URL}/v1/artists/{id}/albums"
         headers = {"Authorization": self._get_authorization_header()}
@@ -139,17 +182,6 @@ class Client:
         return r.json()["items"]
 
     def get_artist_top_tracks(self, id_or_uri):
-        """Get artist top tracks
-
-        Args:
-            id_or_uri (str)
-
-        Raises:
-            ValueError: if artist is not exists
-
-        Returns:
-            list of tracks
-        """
         id = self._extract_id(id_or_uri)
         url = f"{self.BASE_URL}/v1/artists/{id}/top-tracks"
         headers = {"Authorization": self._get_authorization_header()}
@@ -160,18 +192,6 @@ class Client:
         return r.json()["tracks"]
 
     def get_playlist_tracks(self, id_or_uri, offset=0):
-        """Get playlist tracks
-
-        Args:
-            id_or_uri (str)
-            offset (int)
-
-        Raises:
-            ValueError: if playlist is not exists
-
-        Returns:
-            list of tracks
-        """
         id = self._extract_id(id_or_uri)
         url = f"{self.BASE_URL}/v1/playlists/{id}/tracks"
         headers = {"Authorization": self._get_authorization_header()}
