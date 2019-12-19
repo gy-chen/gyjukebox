@@ -6,6 +6,8 @@ from requests_oauthlib import OAuth2Session
 from gyjukebox.oauth.web.state_saver import SessionStateSaver
 from gyjukebox.oauth.provider import GoogleOAuthProvider
 from gyjukebox.oauth.provider import SpotifyOAuthProvider
+from gyjukebox.oauth.token_saver import NoSaveTokenSaver
+from gyjukebox.oauth.token_saver import InMemoryTokenSaver
 
 _OAuthConfig = collections.namedtuple("OAuthConfig", "google_provider spotify_provider")
 
@@ -69,3 +71,14 @@ class OAuth:
     @property
     def spotify_provider(self):
         return self.app.extensions["oauth_ext"].spotify_provider
+
+    def get_token_saver(self, user):
+        """Get token saver
+
+        Args:
+            user (gyjukebox.user.model.User)
+        """
+        sub = user["sub"]
+        if sub.startswith("spotify"):
+            return InMemoryTokenSaver(sub)
+        return NoSaveTokenSaver()

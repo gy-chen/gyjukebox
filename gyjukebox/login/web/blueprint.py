@@ -24,7 +24,7 @@ def google_login_callback():
     token = google_provider.fetch_token(request.url)
     oauth_user = google_provider.fetch_user(token)
     user = User(oauth_user["sub"], oauth_user["name"])
-    return _login_callback(user)
+    return _login_callback(user, token)
 
 
 @bp.route("/login/spotify")
@@ -40,7 +40,7 @@ def spotify_login_callback():
     token = spotify_provider.fetch_token(request.url)
     oauth_user = spotify_provider.fetch_user(token)
     user = User(oauth_user["uri"], oauth_user["display_name"])
-    return _login_callback(user)
+    return _login_callback(user, token)
 
 
 def _login(authorization_url):
@@ -50,10 +50,12 @@ def _login(authorization_url):
     return redirect(authorization_url)
 
 
-def _login_callback(user):
-    token = login_ext.get_login_jwt_token(user)
+def _login_callback(user, token):
+    token_saver = oauth_ext.get_token_saver(user)
+    token_saver.save(token)
 
+    jwt_token = login_ext.get_login_jwt_token(user)
     callback_url = session.get("login_callback_url")
     if callback_url is not None:
-        return redirect(Href(callback_url)(token=token))
-    return jsonify(token=token)
+        return redirect(Href(callback_url)(token=jwt_token))
+    return jsonify(token=jwt_token)

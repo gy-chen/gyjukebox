@@ -27,3 +27,22 @@ class NoSaveTokenSaver(BaseTokenSaver):
 
     def get(self):
         return None
+
+
+class InMemoryTokenSaver(BaseTokenSaver):
+    """Just store token in memory
+
+    Args:
+        sub: key for store and retrive token
+    """
+
+    _STORAGE = {}
+
+    def __init__(self, sub):
+        self._sub = sub
+
+    def save(self, token):
+        self._STORAGE[self._sub] = token
+
+    def get(self):
+        return self._STORAGE.get(self._sub)
