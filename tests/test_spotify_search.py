@@ -87,6 +87,10 @@ def test_get_user_albums(client, oauth_client):
     oauth_client.get_user_albums()
 
 
+def test_get_user_artists(client, oauth_client):
+    assert client.get_user_artists() is None
+    oauth_client.get_user_artists()
+
 def test_get_user_tracks(client, oauth_client):
     assert client.get_user_tracks() is None
     oauth_client.get_user_tracks()

@@ -363,11 +363,13 @@ class OAuthClient(BaseClient):
     def get_user_artists(self, after=None):
         url = f"{self.BASE_URL}/v1/me/following"
         headers = {"Authorization": self._get_authorization_header()}
-        params = {"type": "artist", "after": after}
+        params = {"type": "artist"}
+        if after is not None:
+            params.update("after", after)
         r = requests.get(url, params=params, headers=headers)
         if not r.ok:
             raise ValueError(r.reason)
-        return r.json()["items"]
+        return r.json()["artists"]["items"]
 
     def get_user_tracks(self, offset=0):
         url = f"{self.BASE_URL}/v1/me/tracks"
