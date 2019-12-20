@@ -275,22 +275,22 @@ class Client(BaseClient):
         return data["access_token"]
 
     def get_user_top_artists(self, offset=0):
-        return None
+        return []
 
     def get_user_top_tracks(self, offset=0):
-        return None
+        return []
 
     def get_user_playlists(self, offset=0):
-        return None
+        return []
 
     def get_user_albums(self, offset=0):
-        return None
+        return []
 
     def get_user_artists(self, after=None):
-        return None
+        return []
 
     def get_user_tracks(self, offset=0):
-        return None
+        return []
 
 
 class OAuthClient(BaseClient):
