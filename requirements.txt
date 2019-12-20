@@ -4,3 +4,4 @@ pyspotify
 requests
 pyjwt
 uwsgi
+pre-commit
