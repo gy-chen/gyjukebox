@@ -33,7 +33,9 @@ def get_wordbreak_mappings(url=UCD_WORDBREAK_URL, use_cache=True):
         content = parse_text(raw_content)
         return build_mapping(content)
     with open(pathlib.Path(__file__).parent / "wordbreak.json", "r") as f:
-        return json.load(f)
+        dd = collections.defaultdict(lambda: "Other")
+        dd.update(json.load(f))
+        return dd
 
 
 class TokenType(enum.Enum):
