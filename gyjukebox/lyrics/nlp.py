@@ -64,6 +64,7 @@ class LyricsDocs(JsonLineFileDocs):
     def __init__(self, path, vectorizer=None):
         super().__init__(path)
         self._vectorizer = vectorizer
+        self._scorer = CosineSimScorer()
         self._title_docs = LyricsTitleDocs(self, vectorizer)
         self._artist_docs = LyricsArtistDocs(self, vectorizer)
 
@@ -73,9 +74,9 @@ class LyricsDocs(JsonLineFileDocs):
         )
 
     def score(self, doc1, doc2):
-        return self._title_docs.score(
-            doc1["title"], doc2["title"]
-        ) + self._artist_docs.score(doc1["artist"], doc2["artist"])
+        doc1_vec = self._vectorizer.vectorize(self.analysis(doc1))
+        doc2_vec = self._vectorizer.vectorize(self.analysis(doc2))
+        return self._scorer.score(doc1_vec, doc2_vec)
 
 
 class LyricsTitleDocs:
@@ -149,7 +150,7 @@ class ShortTextPipeline:
         self._n = n
 
     def analysis(self, doc):
-        doc_tokens = list(ngrams(self._doc_pre_pipeline(doc), self._n))
+        doc_tokens = tuple(ngrams(self._doc_pre_pipeline(doc), self._n))
         return doc_tokens
 
     def _doc_pre_pipeline(self, doc):
@@ -214,6 +215,7 @@ class Vectorizer:
         self._index_data = index_data
         self._pos_map = {k: v for v, k in enumerate(index_data.tokens)}
 
+    @functools.lru_cache()
     def vectorize(self, tokens):
         if self._index_data is None:
             raise ValueError("Please load index data")
@@ -515,7 +517,7 @@ def _wb999(c, n, wb_mapping):
 # TODO remove me later
 if __name__ == "__main__":
     docs = LyricsDocs("mojim.jl")
-    indexer = Indexer(docs, 0.07)
+    indexer = Indexer(docs, 0.04)
     indexer.index()
     print("#### indexed")
     index_data = indexer.index_data
