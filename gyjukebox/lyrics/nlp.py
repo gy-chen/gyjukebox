@@ -7,6 +7,7 @@ import string
 import math
 import json
 import linecache
+import functools
 import numpy as np
 from gyjukebox.lyrics.ucd import get_wordbreak_mappings
 
@@ -91,6 +92,7 @@ class LyricsTitleDocs:
     def get(self, i):
         return self._lyrics_docs.get(i)["title"]
 
+    @functools.lru_cache()
     def analysis(self, doc):
         return self._pipeline.analysis(doc)
 
@@ -117,6 +119,7 @@ class LyricsArtistDocs:
     def get(self, i):
         return self._lyrics_docs.get(i)["artist"]
 
+    @functools.lru_cache()
     def analysis(self, doc):
         return self._pipeline.analysis(doc)
 
@@ -209,17 +212,18 @@ class Indexer:
 class Vectorizer:
     def __init__(self, index_data):
         self._index_data = index_data
+        self._pos_map = {k: v for v, k in enumerate(index_data.tokens)}
 
     def vectorize(self, tokens):
         if self._index_data is None:
             raise ValueError("Please load index data")
         vec = np.zeros((len(self._index_data.tokens,)))
-        for token, freq in collections.Counter(tokens).items():
+        for token in tokens:
             try:
-                i = self._index_data.tokens.index(token)
-                vec[i] = (freq / len(tokens)) / self._index_data.df[token]
-            except ValueError:
+                vec[self._pos_map[token]] += 1
+            except KeyError:
                 continue
+        vec /= self._index_data.df[token]
         return vec
 
 
