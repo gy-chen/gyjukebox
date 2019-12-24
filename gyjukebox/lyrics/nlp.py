@@ -59,9 +59,27 @@ class JsonLineFileDocs(Docs):
                 yield json.loads(raw_content)
 
 
-class LyricsTitleFileDocs(JsonLineFileDocs):
-    def __init__(self, path, vectorizer=None, pipeline=None, scorer=None):
+class LyricsDocs(JsonLineFileDocs):
+    def __init__(self, path, vectorizer=None):
         super().__init__(path)
+        self._vectorizer = vectorizer
+        self._title_docs = LyricsTitleDocs(self, vectorizer)
+        self._artist_docs = LyricsArtistDocs(self, vectorizer)
+
+    def analysis(self, doc):
+        return self._title_docs.analysis(doc["title"]) + self._artist_docs.analysis(
+            doc["artist"]
+        )
+
+    def score(self, doc1, doc2):
+        return self._title_docs.score(
+            doc1["title"], doc2["title"]
+        ) + self._artist_docs.score(doc1["artist"], doc2["artist"])
+
+
+class LyricsTitleDocs:
+    def __init__(self, lyrics_docs, vectorizer=None, pipeline=None, scorer=None):
+        self._lyrics_docs = lyrics_docs
         self._vectorizer = vectorizer
         self._pipeline = pipeline
         self._scorer = scorer
@@ -71,7 +89,7 @@ class LyricsTitleFileDocs(JsonLineFileDocs):
             self._scorer = CosineSimScorer()
 
     def get(self, i):
-        return super().get(i)["title"]
+        return self._lyrics_docs.get(i)["title"]
 
     def analysis(self, doc):
         return self._pipeline.analysis(doc)
@@ -82,7 +100,33 @@ class LyricsTitleFileDocs(JsonLineFileDocs):
         return self._scorer.score(doc1_vec, doc2_vec)
 
     def __iter__(self):
-        return (lyrics["title"] for lyrics in super().__iter__())
+        return (lyrics["title"] for lyrics in self._lyrics_docs)
+
+
+class LyricsArtistDocs:
+    def __init__(self, lyrics_docs, vectorizer=None, pipeline=None, scorer=None):
+        self._lyrics_docs = lyrics_docs
+        self._vectorizer = vectorizer
+        self._pipeline = pipeline
+        self._scorer = scorer
+        if pipeline is None:
+            self._pipeline = ShortTextPipeline()
+        if scorer is None:
+            self._scorer = CosineSimScorer()
+
+    def get(self, i):
+        return self._lyrics_docs.get(i)["artist"]
+
+    def analysis(self, doc):
+        return self._pipeline.analysis(doc)
+
+    def score(self, doc1, doc2):
+        doc1_vec = self._vectorizer.vectorize(self.analysis(doc1))
+        doc2_vec = self._vectorizer.vectorize(self.analysis(doc2))
+        return self._scorer.score(doc1_vec, doc2_vec)
+
+    def __iter__(self):
+        return (lyrics["artist"] for lyrics in self._lyrics_docs)
 
 
 class ShortTextPipeline:
@@ -466,15 +510,16 @@ def _wb999(c, n, wb_mapping):
 
 # TODO remove me later
 if __name__ == "__main__":
-    indexer = Indexer(LyricsTitleFileDocs("mojim.jl", None), 0.07)
+    docs = LyricsDocs("mojim.jl")
+    indexer = Indexer(docs, 0.07)
     indexer.index()
     print("#### indexed")
     index_data = indexer.index_data
     vectorizer = Vectorizer(index_data)
-    searcher = Searcher(LyricsTitleFileDocs("mojim.jl", vectorizer), index_data)
-    result = searcher.search("All out of love")
+    docs = LyricsDocs("mojim.jl", vectorizer)
+    searcher = Searcher(docs, index_data)
+    result = searcher.search({"artist": "ari supply", "title": "all out of love"})
     print(result)
-    docs = JsonLineFileDocs("mojim.jl")
     for i, score in result:
         print(score)
         print(docs.get(i))
