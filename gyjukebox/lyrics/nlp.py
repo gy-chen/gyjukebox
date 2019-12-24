@@ -10,6 +10,8 @@ import linecache
 import numpy as np
 from gyjukebox.lyrics.ucd import get_wordbreak_mappings
 
+IndexData = collections.namedtuple("IndexData", "tokens df inverted_index")
+
 
 class Scorer:
     def score(self, vec1, vec2):
@@ -33,6 +35,12 @@ class Docs:
     def get(self, i):
         raise NotImplementedError
 
+    def analysis(self, doc):
+        raise NotImplementedError
+
+    def score(self, doc1, doc2):
+        raise NotImplementedError
+
     def __iter__(self):
         raise NotImplementedError
 
@@ -52,8 +60,26 @@ class JsonLineFileDocs(Docs):
 
 
 class LyricsTitleFileDocs(JsonLineFileDocs):
+    def __init__(self, path, vectorizer=None, pipeline=None, scorer=None):
+        super().__init__(path)
+        self._vectorizer = vectorizer
+        self._pipeline = pipeline
+        self._scorer = scorer
+        if pipeline is None:
+            self._pipeline = ShortTextPipeline()
+        if scorer is None:
+            self._scorer = CosineSimScorer()
+
     def get(self, i):
         return super().get(i)["title"]
+
+    def analysis(self, doc):
+        return self._pipeline.analysis(doc)
+
+    def score(self, doc1, doc2):
+        doc1_vec = self._vectorizer.vectorize(self.analysis(doc1))
+        doc2_vec = self._vectorizer.vectorize(self.analysis(doc2))
+        return self._scorer.score(doc1_vec, doc2_vec)
 
     def __iter__(self):
         return (lyrics["title"] for lyrics in super().__iter__())
@@ -66,36 +92,50 @@ class ShortTextPipeline:
     2. remove punctuation, whitespace
     3. lowercase
     4. ngrams
-    5. remove some tokens using max df and min df
-    6. collect tokens and convert data to bow vectors
+    5. collect tokens and convert data to bow vectors
     """
 
-    def __init__(self, docs, max_df=1.0, min_df=0.0, n=1, scorer=CosineSimScorer()):
+    def __init__(self, n=1):
         self._pw_remove_table = str.maketrans(
             "", "", string.punctuation + string.whitespace
         )
+        self._n = n
+
+    def analysis(self, doc):
+        doc_tokens = list(ngrams(self._doc_pre_pipeline(doc), self._n))
+        return doc_tokens
+
+    def _doc_pre_pipeline(self, doc):
+        """Partial pipeline for preprocessing raw doc
+
+        1. tokenize using wordbreak
+        2. remove punctuation, whitespace
+        3. lowercase
+        """
+
+        for token in words(doc):
+            token = token.translate(self._pw_remove_table)
+            token = token.lower()
+            if not token:
+                continue
+            yield token
+
+
+class Indexer:
+    def __init__(self, docs, max_df=1.0, min_df=0.0):
         self._docs = docs
         self._max_df = max_df
         self._min_df = min_df
-        self._n = n
-        self._scorer = scorer
-        self.tokens = None
-        self.df = None
-        # map from term to doc
-        self.inverted_index = None
-
-    def load(self, tokens, df, inverted_index):
-        self.tokens = tokens
-        self.df = df
-        self.inverted_index = inverted_index
+        self._index_data = None
 
     def index(self):
         tokens = set()
         df = collections.defaultdict(int)
+        # map from term to doc
         inverted_index = collections.defaultdict(set)
         docs_len = 0
         for i, doc in enumerate(self._docs):
-            doc_tokens = list(ngrams(self._doc_pre_pipeline(doc), self._n))
+            doc_tokens = self._docs.analysis(doc)
             tf = collections.defaultdict(int)
             for token in doc_tokens:
                 tf[token] += 1
@@ -115,31 +155,34 @@ class ShortTextPipeline:
                 if dfn[token] > self._min_df and dfn[token] < self._max_df
             )
 
-        self.tokens = sorted(tokens)
-        self.df = df
-        self.inverted_index = inverted_index
+        self._index_data = IndexData(sorted(tokens), df, inverted_index)
 
-    def analysis(self, doc):
-        if self.tokens is None:
-            raise ValueError(
-                "Please run index first, or load saved tokens and df state."
-            )
-        doc_tokens = list(ngrams(self._doc_pre_pipeline(doc), self._n))
-        return doc_tokens
+    @property
+    def index_data(self):
+        return self._index_data
+
+
+class Vectorizer:
+    def __init__(self, index_data):
+        self._index_data = index_data
 
     def vectorize(self, tokens):
-        if self.tokens is None or self.df is None:
-            raise ValueError(
-                "Please run index first, or load saved tokens and df state."
-            )
-        vec = np.zeros((len(self.tokens,)))
+        if self._index_data is None:
+            raise ValueError("Please load index data")
+        vec = np.zeros((len(self._index_data.tokens,)))
         for token, freq in collections.Counter(tokens).items():
             try:
-                i = self.tokens.index(token)
-                vec[i] = (freq / len(tokens)) / self.df[token]
+                i = self._index_data.tokens.index(token)
+                vec[i] = (freq / len(tokens)) / self._index_data.df[token]
             except ValueError:
                 continue
         return vec
+
+
+class Searcher:
+    def __init__(self, docs, index_data):
+        self._docs = docs
+        self._index_data = index_data
 
     def search(self, doc, n=10):
         """Search top docs that matching speciftheic doc
@@ -151,39 +194,22 @@ class ShortTextPipeline:
         Returns:
             ((i, score), ...), i is the index that can retrieve original doc back 
         """
-        doc_tokens = ngrams(self._doc_pre_pipeline(doc), self._n)
+        doc_tokens = self._docs.analysis(doc)
 
         search_doc_indexes = set()
         for doc_token in doc_tokens:
             try:
-                search_doc_indexes.update(self.inverted_index[doc_token])
+                search_doc_indexes.update(self._index_data.inverted_index[doc_token])
             except IndexError:
                 continue
 
         search_doc_indexes = list(search_doc_indexes)
         search_docs = [self._docs.get(i) for i in search_doc_indexes]
-        doc_vec = self.vectorize(self.analysis(doc))
         search_scores = [
-            self._scorer.score(doc_vec, self.vectorize(self.analysis(search_doc)))
-            for search_doc in search_docs
+            self._docs.score(doc, search_doc) for search_doc in search_docs
         ]
         search_i = np.argsort(search_scores)
         return [(search_doc_indexes[i], search_scores[i]) for i in search_i[::-1][:n]]
-
-    def _doc_pre_pipeline(self, doc):
-        """Partial pipeline for preprocessing raw doc
-
-        1. tokenize using wordbreak
-        2. remove punctuation, whitespace
-        3. lowercase
-        """
-
-        for token in words(doc):
-            token = token.translate(self._pw_remove_table)
-            token = token.lower()
-            if not token:
-                continue
-            yield token
 
 
 def ngrams(sequence, n):
@@ -440,10 +466,13 @@ def _wb999(c, n, wb_mapping):
 
 # TODO remove me later
 if __name__ == "__main__":
-    pipeline = ShortTextPipeline(LyricsTitleFileDocs("mojim.jl"), 0.07)
-    pipeline.index()
+    indexer = Indexer(LyricsTitleFileDocs("mojim.jl", None), 0.07)
+    indexer.index()
     print("#### indexed")
-    result = pipeline.search("All out of love")
+    index_data = indexer.index_data
+    vectorizer = Vectorizer(index_data)
+    searcher = Searcher(LyricsTitleFileDocs("mojim.jl", vectorizer), index_data)
+    result = searcher.search("All out of love")
     print(result)
     docs = JsonLineFileDocs("mojim.jl")
     for i, score in result:
