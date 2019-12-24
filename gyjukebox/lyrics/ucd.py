@@ -7,6 +7,7 @@ import collections
 import re
 import pathlib
 import json
+import functools
 import requests
 from gyjukebox.lyrics.util import Peekable
 
@@ -18,6 +19,7 @@ WordBreakProperty = collections.namedtuple("WordBreakProperty", "codepoints prop
 Token = collections.namedtuple("Token", "type value")
 
 
+@functools.lru_cache()
 def get_wordbreak_mappings(url=UCD_WORDBREAK_URL, use_cache=True):
     """Get and parse ucd wordbreak data
 

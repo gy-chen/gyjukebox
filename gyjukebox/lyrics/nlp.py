@@ -6,6 +6,8 @@ import itertools
 import string
 import math
 import json
+import linecache
+import numpy as np
 from gyjukebox.lyrics.ucd import get_wordbreak_mappings
 
 
@@ -16,12 +18,10 @@ class Scorer:
 
 class CosineSimScorer:
     def score(self, vec1, vec2):
-        dot_prod = 0
-        for i, v in enumerate(vec1):
-            dot_prod += v * vec2[i]
+        dot_prod = np.sum(vec1 * vec2)
 
-        mag1 = math.sqrt(sum(x ** 2 for x in vec1))
-        mag2 = math.sqrt(sum(x ** 2 for x in vec2))
+        mag1 = np.sqrt(np.sum(vec1 ** 2))
+        mag2 = np.sqrt(np.sum(vec2 ** 2))
 
         if mag1 == 0 or mag2 == 0:
             return 0
@@ -42,10 +42,8 @@ class JsonLineFileDocs(Docs):
         self._path = path
 
     def get(self, i):
-        with open(self._path, "r") as f:
-            for (_,) in range(i + 1):
-                raw_content = f.readline()
-            return json.loads(raw_content)
+        raw_content = linecache.getline(self._path, i)
+        return json.loads(raw_content)
 
     def __iter__(self):
         with open(self._path, "r") as f:
@@ -94,14 +92,14 @@ class ShortTextPipeline:
     def index(self):
         tokens = set()
         df = collections.defaultdict(int)
-        inverted_index = collections.defaultdict(list)
+        inverted_index = collections.defaultdict(set)
         docs_len = 0
         for i, doc in enumerate(self._docs):
             doc_tokens = list(ngrams(self._doc_pre_pipeline(doc), self._n))
             tf = collections.defaultdict(int)
             for token in doc_tokens:
                 tf[token] += 1
-                inverted_index[token].append(i)
+                inverted_index[token].add(i)
             for token in tf:
                 tf[token] /= len(doc_tokens)
             for token in set(doc_tokens):
@@ -127,7 +125,7 @@ class ShortTextPipeline:
                 "Please run index first, or load saved tokens and df state."
             )
         doc_tokens = list(ngrams(self._doc_pre_pipeline(doc), self._n))
-        vec = [0] * len(self.tokens)
+        vec = np.zeros((len(self.tokens,)))
         for token, freq in collections.Counter(doc_tokens).items():
             try:
                 i = self.tokens.index(token)
@@ -147,14 +145,13 @@ class ShortTextPipeline:
                 continue
 
         search_docs = [self._docs.get(i) for i in search_doc_indexes]
-
         doc_vec = self.analysis(doc)
-        search_docs.sort(
-            key=lambda search_doc: self._scorer.score(
-                doc_vec, self.analysis(search_doc)
-            )
-        )
-        return search_docs[-1]
+        search_scores = [
+            self._scorer.score(doc_vec, self.analysis(search_doc))
+            for search_doc in search_docs
+        ]
+        search_i = np.argsort(search_scores)
+        return search_docs[search_i[-1]]
 
     def _doc_pre_pipeline(self, doc):
         """Partial pipeline for preprocessing raw doc
@@ -428,4 +425,5 @@ def _wb999(c, n, wb_mapping):
 if __name__ == "__main__":
     pipeline = ShortTextPipeline(LyricsTitleFileDocs("mojim.jl"), 0.07)
     pipeline.index()
+    print("#### indexed")
     print(pipeline.search("All out of love"))
