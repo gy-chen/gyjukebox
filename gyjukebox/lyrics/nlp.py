@@ -120,21 +120,37 @@ class ShortTextPipeline:
         self.inverted_index = inverted_index
 
     def analysis(self, doc):
-        if self.tokens is None or self.df is None:
+        if self.tokens is None:
             raise ValueError(
                 "Please run index first, or load saved tokens and df state."
             )
         doc_tokens = list(ngrams(self._doc_pre_pipeline(doc), self._n))
+        return doc_tokens
+
+    def vectorize(self, tokens):
+        if self.tokens is None or self.df is None:
+            raise ValueError(
+                "Please run index first, or load saved tokens and df state."
+            )
         vec = np.zeros((len(self.tokens,)))
-        for token, freq in collections.Counter(doc_tokens).items():
+        for token, freq in collections.Counter(tokens).items():
             try:
                 i = self.tokens.index(token)
-                vec[i] = (freq / len(doc_tokens)) / self.df[token]
+                vec[i] = (freq / len(tokens)) / self.df[token]
             except ValueError:
                 continue
         return vec
 
-    def search(self, doc):
+    def search(self, doc, n=10):
+        """Search top docs that matching speciftheic doc
+
+        Args:
+            doc (str)
+            n (int)
+
+        Returns:
+            ((i, score), ...), i is the index that can retrieve original doc back 
+        """
         doc_tokens = ngrams(self._doc_pre_pipeline(doc), self._n)
 
         search_doc_indexes = set()
@@ -144,14 +160,15 @@ class ShortTextPipeline:
             except IndexError:
                 continue
 
+        search_doc_indexes = list(search_doc_indexes)
         search_docs = [self._docs.get(i) for i in search_doc_indexes]
-        doc_vec = self.analysis(doc)
+        doc_vec = self.vectorize(self.analysis(doc))
         search_scores = [
-            self._scorer.score(doc_vec, self.analysis(search_doc))
+            self._scorer.score(doc_vec, self.vectorize(self.analysis(search_doc)))
             for search_doc in search_docs
         ]
         search_i = np.argsort(search_scores)
-        return search_docs[search_i[-1]]
+        return [(search_doc_indexes[i], search_scores[i]) for i in search_i[::-1][:n]]
 
     def _doc_pre_pipeline(self, doc):
         """Partial pipeline for preprocessing raw doc
@@ -426,4 +443,9 @@ if __name__ == "__main__":
     pipeline = ShortTextPipeline(LyricsTitleFileDocs("mojim.jl"), 0.07)
     pipeline.index()
     print("#### indexed")
-    print(pipeline.search("All out of love"))
+    result = pipeline.search("All out of love")
+    print(result)
+    docs = JsonLineFileDocs("mojim.jl")
+    for i, score in result:
+        print(score)
+        print(docs.get(i))
