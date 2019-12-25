@@ -11,7 +11,38 @@ import functools
 import numpy as np
 from gyjukebox.lyrics.ucd import get_wordbreak_mappings
 
+IndexPerDocument = collections.namedtuple("IndexPerDocument", "vector")
 IndexData = collections.namedtuple("IndexData", "tokens df inverted_index")
+
+
+class IndexPerDocumentReader:
+    def get(self, i):
+        raise NotImplementedError
+
+
+class InMemoryPerDocumentReader:
+    def __init__(self, index_per_documents):
+        self._index_per_documents = index_per_documents
+
+    def get(self, i):
+        return self._index_per_documents[i]
+
+
+class IndexPerDocumentWriter:
+    def write(self, index_per_document):
+        raise NotImplementedError
+
+
+class InMemoryPerDocumentWriter:
+    def __init__(self):
+        self._index_per_documents = []
+
+    def write(self, index_per_document):
+        self._index_per_documents.append(index_per_document)
+
+    @property
+    def index_per_documents(self):
+        return self._index_per_documents
 
 
 class Scorer:
@@ -40,6 +71,18 @@ class Docs:
         raise NotImplementedError
 
     def score(self, doc1, doc2):
+        """score similarity of the two docs
+
+        Args:
+            doc1 (str|list): str or vector list
+            doc2 (str|list): str or vector list
+
+        Returns:
+            score number
+        """
+        raise NotImplementedError
+
+    def vector(self, doc):
         raise NotImplementedError
 
     def __iter__(self):
@@ -73,14 +116,31 @@ class LyricsDocs(JsonLineFileDocs):
             doc["artist"]
         )
 
+    def _get_field(self, doc, fieldname):
+        if isinstance(doc, IndexPerDocument):
+            return doc.vector[fieldname]
+        return doc[fieldname]
+
     def score(self, doc1, doc2):
-        doc1_vec = self._vectorizer.vectorize(self.analysis(doc1))
-        doc2_vec = self._vectorizer.vectorize(self.analysis(doc2))
-        return self._scorer.score(doc1_vec, doc2_vec)
+        doc1_title = self._get_field(doc1, "title")
+        doc1_artist = self._get_field(doc1, "artist")
+
+        doc2_title = self._get_field(doc2, "title")
+        doc2_artist = self._get_field(doc2, "artist")
+        return self._title_docs.score(doc1_title, doc2_title) + self._artist_docs.score(
+            doc1_artist, doc2_artist
+        )
+
+    def vector(self, doc):
+        title_vector = self._title_docs.vector(doc["title"])
+        artist_vector = self._artist_docs.vector(doc["artist"])
+        return {"title": title_vector, "artist": artist_vector}
 
 
 class LyricsTitleDocs:
-    def __init__(self, lyrics_docs, vectorizer=None, pipeline=None, scorer=None):
+    def __init__(
+        self, lyrics_docs, vectorizer=None, pipeline=None, scorer=None,
+    ):
         self._lyrics_docs = lyrics_docs
         self._vectorizer = vectorizer
         self._pipeline = pipeline
@@ -93,21 +153,27 @@ class LyricsTitleDocs:
     def get(self, i):
         return self._lyrics_docs.get(i)["title"]
 
-    @functools.lru_cache()
     def analysis(self, doc):
         return self._pipeline.analysis(doc)
 
     def score(self, doc1, doc2):
-        doc1_vec = self._vectorizer.vectorize(self.analysis(doc1))
-        doc2_vec = self._vectorizer.vectorize(self.analysis(doc2))
+        doc1_vec = self.vector(doc1)
+        doc2_vec = self.vector(doc2)
         return self._scorer.score(doc1_vec, doc2_vec)
+
+    def vector(self, doc):
+        if isinstance(doc, str):
+            return self._vectorizer.vectorize(self.analysis(doc))
+        return doc
 
     def __iter__(self):
         return (lyrics["title"] for lyrics in self._lyrics_docs)
 
 
 class LyricsArtistDocs:
-    def __init__(self, lyrics_docs, vectorizer=None, pipeline=None, scorer=None):
+    def __init__(
+        self, lyrics_docs, vectorizer=None, pipeline=None, scorer=None,
+    ):
         self._lyrics_docs = lyrics_docs
         self._vectorizer = vectorizer
         self._pipeline = pipeline
@@ -120,14 +186,18 @@ class LyricsArtistDocs:
     def get(self, i):
         return self._lyrics_docs.get(i)["artist"]
 
-    @functools.lru_cache()
     def analysis(self, doc):
         return self._pipeline.analysis(doc)
 
     def score(self, doc1, doc2):
-        doc1_vec = self._vectorizer.vectorize(self.analysis(doc1))
-        doc2_vec = self._vectorizer.vectorize(self.analysis(doc2))
+        doc1_vec = self.vector(doc1)
+        doc2_vec = self.vector(doc2)
         return self._scorer.score(doc1_vec, doc2_vec)
+
+    def vector(self, doc):
+        if isinstance(doc, str):
+            return self._vectorizer.vectorize(self.analysis(doc))
+        return doc
 
     def __iter__(self):
         return (lyrics["artist"] for lyrics in self._lyrics_docs)
@@ -170,20 +240,18 @@ class ShortTextPipeline:
 
 
 class Indexer:
-    def __init__(self, docs, max_df=1.0, min_df=0.0):
-        self._docs = docs
+    def __init__(self, max_df=1.0, min_df=0.0):
         self._max_df = max_df
         self._min_df = min_df
-        self._index_data = None
 
-    def index(self):
+    def index(self, docs):
         tokens = set()
         df = collections.defaultdict(int)
         # map from term to doc
         inverted_index = collections.defaultdict(set)
         docs_len = 0
-        for i, doc in enumerate(self._docs):
-            doc_tokens = self._docs.analysis(doc)
+        for i, doc in enumerate(docs):
+            doc_tokens = docs.analysis(doc)
             tf = collections.defaultdict(int)
             for token in doc_tokens:
                 tf[token] += 1
@@ -203,11 +271,13 @@ class Indexer:
                 if dfn[token] > self._min_df and dfn[token] < self._max_df
             )
 
-        self._index_data = IndexData(sorted(tokens), df, inverted_index)
+        return IndexData(sorted(tokens), df, inverted_index)
 
-    @property
-    def index_data(self):
-        return self._index_data
+    def index_per_documents(self, docs, index_data, index_per_documents_writer):
+        for doc in docs:
+            vector = docs.vector(doc)
+            index_per_document = IndexPerDocument(vector)
+            index_per_documents_writer.write(index_per_document)
 
 
 class Vectorizer:
@@ -215,7 +285,6 @@ class Vectorizer:
         self._index_data = index_data
         self._pos_map = {k: v for v, k in enumerate(index_data.tokens)}
 
-    @functools.lru_cache()
     def vectorize(self, tokens):
         if self._index_data is None:
             raise ValueError("Please load index data")
@@ -230,9 +299,10 @@ class Vectorizer:
 
 
 class Searcher:
-    def __init__(self, docs, index_data):
+    def __init__(self, docs, index_data, index_per_document_reader):
         self._docs = docs
         self._index_data = index_data
+        self._index_per_document_reader = index_per_document_reader
 
     def search(self, doc, n=10):
         """Search top docs that matching speciftheic doc
@@ -254,9 +324,10 @@ class Searcher:
                 continue
 
         search_doc_indexes = list(search_doc_indexes)
-        search_docs = [self._docs.get(i) for i in search_doc_indexes]
+        doc_vec = self._docs.vector(doc)
         search_scores = [
-            self._docs.score(doc, search_doc) for search_doc in search_docs
+            self._docs.score(doc_vec, self._index_per_document_reader.get(i))
+            for i in search_doc_indexes
         ]
         search_i = np.argsort(search_scores)
         return [(search_doc_indexes[i], search_scores[i]) for i in search_i[::-1][:n]]
@@ -517,13 +588,17 @@ def _wb999(c, n, wb_mapping):
 # TODO remove me later
 if __name__ == "__main__":
     docs = LyricsDocs("mojim.jl")
-    indexer = Indexer(docs, 0.04)
-    indexer.index()
-    print("#### indexed")
-    index_data = indexer.index_data
+    indexer = Indexer(0.04)
+    index_data = indexer.index(docs)
     vectorizer = Vectorizer(index_data)
     docs = LyricsDocs("mojim.jl", vectorizer)
-    searcher = Searcher(docs, index_data)
+    index_per_document_writer = InMemoryPerDocumentWriter()
+    indexer.index_per_documents(docs, vectorizer, index_per_document_writer)
+    index_per_document_reader = InMemoryPerDocumentReader(
+        index_per_document_writer.index_per_documents
+    )
+    print("#### indexed")
+    searcher = Searcher(docs, index_data, index_per_document_reader)
     result = searcher.search({"artist": "ari supply", "title": "all out of love"})
     print(result)
     for i, score in result:
