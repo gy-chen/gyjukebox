@@ -10,6 +10,7 @@ import linecache
 import functools
 import pickle
 import pathlib
+import zlib
 import numpy as np
 from gyjukebox.lyrics.ucd import get_wordbreak_mappings
 
@@ -36,7 +37,7 @@ class FilePerDocumentReader:
 
     def get(self, i):
         with open(self._path / str(i), "rb") as f:
-            return pickle.load(f)
+            return pickle.loads(zlib.decompress(f.read()))
 
 
 class IndexPerDocumentWriter:
@@ -63,7 +64,8 @@ class FilePerDocumentWriter:
 
     def write(self, index_per_document):
         with open(self._path / str(self._no), "wb") as f:
-            pickle.dump(index_per_document, f)
+            compressed = zlib.compress(pickle.dumps(index_per_document), 2)
+            f.write(compressed)
         self._no += 1
 
 
