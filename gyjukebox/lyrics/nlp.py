@@ -8,6 +8,8 @@ import math
 import json
 import linecache
 import functools
+import pickle
+import pathlib
 import numpy as np
 from gyjukebox.lyrics.ucd import get_wordbreak_mappings
 
@@ -28,6 +30,15 @@ class InMemoryPerDocumentReader:
         return self._index_per_documents[i]
 
 
+class FilePerDocumentReader:
+    def __init__(self, path):
+        self._path = pathlib.Path(path)
+
+    def get(self, i):
+        with open(self._path / str(i), "rb") as f:
+            return pickle.load(f)
+
+
 class IndexPerDocumentWriter:
     def write(self, index_per_document):
         raise NotImplementedError
@@ -43,6 +54,17 @@ class InMemoryPerDocumentWriter:
     @property
     def index_per_documents(self):
         return self._index_per_documents
+
+
+class FilePerDocumentWriter:
+    def __init__(self, path):
+        self._path = pathlib.Path(path)
+        self._no = 0
+
+    def write(self, index_per_document):
+        with open(self._path / str(self._no), "wb") as f:
+            pickle.dump(index_per_document, f)
+        self._no += 1
 
 
 class Scorer:
@@ -592,11 +614,9 @@ if __name__ == "__main__":
     index_data = indexer.index(docs)
     vectorizer = Vectorizer(index_data)
     docs = LyricsDocs("mojim.jl", vectorizer)
-    index_per_document_writer = InMemoryPerDocumentWriter()
+    index_per_document_writer = FilePerDocumentWriter("demo_index")
     indexer.index_per_documents(docs, vectorizer, index_per_document_writer)
-    index_per_document_reader = InMemoryPerDocumentReader(
-        index_per_document_writer.index_per_documents
-    )
+    index_per_document_reader = FilePerDocumentReader("demo_index")
     print("#### indexed")
     searcher = Searcher(docs, index_data, index_per_document_reader)
     result = searcher.search({"artist": "ari supply", "title": "all out of love"})
