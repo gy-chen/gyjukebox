@@ -1,5 +1,7 @@
+import collections
 import linecache
 import json
+import math
 from gyjukebox.lyrics.nlp.pure.scorer import CosineSimScorer
 from gyjukebox.lyrics.nlp.pure.pipeline import ShortTextPipeline
 
@@ -21,9 +23,6 @@ class Docs:
         Returns:
             score number
         """
-        raise NotImplementedError
-
-    def vector(self, doc):
         raise NotImplementedError
 
     def index(self, doc):
@@ -48,11 +47,10 @@ class JsonLineFileDocs(Docs):
 
 
 class LyricsDocs(JsonLineFileDocs):
-    def __init__(self, path, vectorizer=None):
+    def __init__(self, path):
         super().__init__(path)
-        self._vectorizer = vectorizer
-        self._title_docs = LyricsTitleDocs(self, vectorizer)
-        self._artist_docs = LyricsArtistDocs(self, vectorizer)
+        self._title_docs = LyricsTitleDocs(self)
+        self._artist_docs = LyricsArtistDocs(self)
 
     def analysis(self, doc):
         return self._title_docs.analysis(doc["title"]) + self._artist_docs.analysis(
@@ -69,11 +67,6 @@ class LyricsDocs(JsonLineFileDocs):
             doc1_artist, doc2_artist
         )
 
-    def vector(self, doc):
-        title_vector = self._title_docs.vector(doc["title"])
-        artist_vector = self._artist_docs.vector(doc["artist"])
-        return {"title": title_vector, "artist": artist_vector}
-
     def index(self, doc):
         return {
             "title": self._title_docs.index(doc["title"]),
@@ -82,9 +75,8 @@ class LyricsDocs(JsonLineFileDocs):
 
 
 class LyricsTitleDocs:
-    def __init__(self, lyrics_docs, vectorizer=None):
+    def __init__(self, lyrics_docs):
         self._lyrics_docs = lyrics_docs
-        self._vectorizer = vectorizer
         self._pipeline = ShortTextPipeline()
         self._scorer = CosineSimScorer()
 
@@ -95,24 +87,32 @@ class LyricsTitleDocs:
         return self._pipeline.analysis(doc)
 
     def score(self, index_per_document_1, index_per_document_2):
-        doc1_vec = index_per_document_1["vector"]
-        doc2_vec = index_per_document_2["vector"]
-        return self._scorer.score(doc1_vec, doc2_vec)
+        doc1_bow = index_per_document_1["bow"]
+        doc1_mag = index_per_document_1["mag"]
+        doc2_bow = index_per_document_2["bow"]
+        doc2_mag = index_per_document_2["mag"]
+        return self._scorer.score(doc1_bow, doc1_mag, doc2_bow, doc2_mag)
 
-    def vector(self, doc):
-        return self._vectorizer.vectorize(self.analysis(doc))
+    def _bow(self, doc):
+        return collections.Counter(self.analysis(doc))
+
+    def _mag(self, bow):
+        mag = 0
+        for freq in bow.values():
+            mag += math.sqrt(freq ** 2)
+        return mag
 
     def index(self, doc):
-        return {"vector": self.vector(doc)}
+        bow = self._bow(doc)
+        return {"bow": bow, "mag": self._mag(bow)}
 
     def __iter__(self):
         return (lyrics["title"] for lyrics in self._lyrics_docs)
 
 
 class LyricsArtistDocs:
-    def __init__(self, lyrics_docs, vectorizer=None):
+    def __init__(self, lyrics_docs):
         self._lyrics_docs = lyrics_docs
-        self._vectorizer = vectorizer
         self._pipeline = ShortTextPipeline()
         self._scorer = CosineSimScorer()
 
@@ -123,15 +123,24 @@ class LyricsArtistDocs:
         return self._pipeline.analysis(doc)
 
     def score(self, index_per_document_1, index_per_document_2):
-        doc1_vec = index_per_document_1["vector"]
-        doc2_vec = index_per_document_2["vector"]
-        return self._scorer.score(doc1_vec, doc2_vec)
+        doc1_bow = index_per_document_1["bow"]
+        doc1_mag = index_per_document_1["mag"]
+        doc2_bow = index_per_document_2["bow"]
+        doc2_mag = index_per_document_2["mag"]
+        return self._scorer.score(doc1_bow, doc1_mag, doc2_bow, doc2_mag)
 
-    def vector(self, doc):
-        return self._vectorizer.vectorize(self.analysis(doc))
+    def _bow(self, doc):
+        return collections.Counter(self.analysis(doc))
+
+    def _mag(self, bow):
+        mag = 0
+        for freq in bow.values():
+            mag += math.sqrt(freq ** 2)
+        return mag
 
     def index(self, doc):
-        return {"vector": self.vector(doc)}
+        bow = self._bow(doc)
+        return {"bow": bow, "mag": self._mag(bow)}
 
     def __iter__(self):
         return (lyrics["artist"] for lyrics in self._lyrics_docs)

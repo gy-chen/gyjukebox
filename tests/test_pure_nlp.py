@@ -8,7 +8,6 @@ from gyjukebox.lyrics.nlp.pure.index import FileIndexPerDocumentWriter
 from gyjukebox.lyrics.nlp.pure.index import FileIndexPerDocumentReader
 from gyjukebox.lyrics.nlp.pure.search import Searcher
 from gyjukebox.lyrics.nlp.pure.docs import LyricsDocs
-from gyjukebox.lyrics.nlp.pure.scorer import Vectorizer
 from gyjukebox.lyrics.search import PureNlpLyricsSearcher
 
 
@@ -26,12 +25,10 @@ def lyrics_path():
 def test_pure_nlp_without_error(index_dir, lyrics_path):
     docs = LyricsDocs(lyrics_path)
     index_data_writer = FileIndexDataWriter(index_dir)
-    indexer = Indexer(0.05)
+    indexer = Indexer()
     indexer.index(docs, index_data_writer)
 
     index_data_reader = FileIndexDataReader(index_dir)
-    vectorizer = Vectorizer(index_data_reader.get())
-    docs = LyricsDocs(lyrics_path, vectorizer)
     index_per_documents_writer = FileIndexPerDocumentWriter(index_dir)
     indexer.index_per_documents(
         docs, index_data_reader.get(), index_per_documents_writer
@@ -44,6 +41,6 @@ def test_pure_nlp_without_error(index_dir, lyrics_path):
 
 def test_pure_nlp_searcher(index_dir, lyrics_path):
     pure_nlp_searcher = PureNlpLyricsSearcher(lyrics_path, index_dir)
-    result = pure_nlp_searcher.search("air", "love")
+    result = pure_nlp_searcher.search("air supply", "young love")
     assert result.artist == "Air Supply"
-    assert result.title == "All Out Of Love"
+    assert result.title == "Young Love"
