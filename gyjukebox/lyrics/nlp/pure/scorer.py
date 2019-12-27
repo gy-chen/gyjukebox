@@ -1,4 +1,5 @@
 import numpy as np
+import collections
 
 
 class Scorer:
@@ -28,10 +29,9 @@ class Vectorizer:
         if self._index_data is None:
             raise ValueError("Please load index data")
         vec = np.zeros((len(self._index_data.tokens,)))
-        for token in tokens:
+        for token, freq in collections.Counter(tokens).items():
             try:
-                vec[self._pos_map[token]] += 1
+                vec[self._pos_map[token]] = freq /  self._index_data.df[token]
             except KeyError:
                 continue
-        vec /= self._index_data.df[token]
         return vec
