@@ -9,9 +9,10 @@ from gyjukebox.lyrics.nlp.pure.index import FileIndexPerDocumentReader
 from gyjukebox.lyrics.nlp.pure.search import Searcher
 from gyjukebox.lyrics.nlp.pure.docs import LyricsDocs
 from gyjukebox.lyrics.nlp.pure.scorer import Vectorizer
+from gyjukebox.lyrics.search import PureNlpLyricsSearcher
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def index_dir():
     with tempfile.TemporaryDirectory() as tmpdirname:
         yield tmpdirname
@@ -19,7 +20,7 @@ def index_dir():
 
 @pytest.fixture()
 def lyrics_path():
-    return pathlib.Path(__file__).parent / "mojim.jl"
+    return str(pathlib.Path(__file__).parent / "mojim.jl")
 
 
 def test_pure_nlp_without_error(index_dir, lyrics_path):
@@ -39,3 +40,10 @@ def test_pure_nlp_without_error(index_dir, lyrics_path):
     index_per_document_reader = FileIndexPerDocumentReader(index_dir)
     searcher = Searcher(docs, index_data_reader, index_per_document_reader)
     searcher.search({"artist": "air", "title": "love"})
+
+
+def test_pure_nlp_searcher(index_dir, lyrics_path):
+    pure_nlp_searcher = PureNlpLyricsSearcher(lyrics_path, index_dir)
+    result = pure_nlp_searcher.search("air", "love")
+    assert result.artist == "Air Supply"
+    assert result.title == "All Out Of Love"

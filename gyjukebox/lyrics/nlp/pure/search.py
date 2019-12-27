@@ -7,7 +7,7 @@ class Searcher:
         self._index_data_reader = index_data_reader
         self._index_per_document_reader = index_per_document_reader
 
-    def search(self, doc, n=10):
+    def search(self, doc, n=10, return_doc=False):
         """Search top docs that matching speciftheic doc
 
         Args:
@@ -16,6 +16,7 @@ class Searcher:
 
         Returns:
             ((i, score), ...), i is the index that can retrieve original doc back 
+            ((doc, score), ...), if return_doc is True
         """
         doc_tokens = self._docs.analysis(doc)
 
@@ -34,4 +35,8 @@ class Searcher:
             for i in search_doc_indexes
         ]
         search_i = np.argsort(search_scores)
-        return [(search_doc_indexes[i], search_scores[i]) for i in search_i[::-1][:n]]
+        transform = self._docs.get if return_doc else lambda i: i
+        return [
+            (transform(search_doc_indexes[i]), search_scores[i])
+            for i in search_i[::-1][:n]
+        ]
