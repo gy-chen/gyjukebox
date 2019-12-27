@@ -99,8 +99,8 @@ class LyricsTitleDocs:
     def _mag(self, bow):
         mag = 0
         for freq in bow.values():
-            mag += math.sqrt(freq ** 2)
-        return mag
+            mag += freq ** 2
+        return math.sqrt(mag)
 
     def index(self, doc):
         bow = self._bow(doc)
@@ -135,8 +135,8 @@ class LyricsArtistDocs:
     def _mag(self, bow):
         mag = 0
         for freq in bow.values():
-            mag += math.sqrt(freq ** 2)
-        return mag
+            mag += freq ** 2
+        return math.sqrt(mag)
 
     def index(self, doc):
         bow = self._bow(doc)
