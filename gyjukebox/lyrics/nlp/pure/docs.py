@@ -38,7 +38,7 @@ class JsonLineFileDocs(Docs):
         self._path = path
 
     def get(self, i):
-        raw_content = linecache.getline(self._path, i)
+        raw_content = linecache.getline(self._path, i+1)
         return json.loads(raw_content)
 
     def __iter__(self):
