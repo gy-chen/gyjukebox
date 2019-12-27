@@ -31,7 +31,9 @@ class Vectorizer:
         vec = np.zeros((len(self._index_data.tokens,)))
         for token, freq in collections.Counter(tokens).items():
             try:
-                vec[self._pos_map[token]] = freq /  self._index_data.df[token]
+                vec[self._pos_map[token]] = (freq + 1) / (
+                    self._index_data.df[token] + 1
+                )
             except KeyError:
                 continue
         return vec

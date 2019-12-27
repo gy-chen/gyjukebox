@@ -21,12 +21,24 @@ class InMemoryIndexPerDocumentReader(IndexPerDocumentReader):
 
 
 class FileIndexPerDocumentReader(IndexPerDocumentReader):
-    def __init__(self, path):
-        self._path = pathlib.Path(path)
+    def __init__(self, path, index_filename="ipd", toc_filename="ipd_toc"):
+        path = pathlib.Path(path)
+        self._index_f = open(path / index_filename, "rb")
+        self._toc_path = str(path / toc_filename)
 
     def get(self, i):
-        with open(self._path / str(i), "rb") as f:
-            return pickle.loads(zlib.decompress(f.read()))
+        location, length = self._get_location(i)
+        self._index_f.seek(location)
+        raw_content = self._index_f.read(length)
+        return pickle.loads(zlib.decompress(raw_content))
+
+    def close(self):
+        self._index_f.close()
+
+    def _get_location(self, i):
+        l1 = int(linecache.getline(self._toc_path, i + 1))
+        l2 = int(linecache.getline(self._toc_path, i + 2))
+        return (l1, l2 - l1)
 
 
 class IndexPerDocumentWriter:
@@ -47,15 +59,22 @@ class InMemoryIndexPerDocumentWriter:
 
 
 class FileIndexPerDocumentWriter:
-    def __init__(self, path):
-        self._path = pathlib.Path(path)
-        self._no = 0
+    def __init__(self, path, index_filename="ipd", toc_filename="ipd_toc"):
+        path = pathlib.Path(path)
+        self._index_f = open(path / index_filename, "wb")
+        self._toc_f = open(path / toc_filename, "w")
+        self._acc = 0
 
     def write(self, index_per_document):
-        with open(self._path / str(self._no), "wb") as f:
-            compressed = zlib.compress(pickle.dumps(index_per_document), 2)
-            f.write(compressed)
-        self._no += 1
+        self._toc_f.write(str(self._acc))
+        self._toc_f.write("\n")
+        compressed = zlib.compress(pickle.dumps(index_per_document), 2)
+        writed = self._index_f.write(compressed)
+        self._acc += writed
+
+    def close(self):
+        self._index_f.close()
+        self._toc_f.close()
 
 
 class IndexDataReader:
