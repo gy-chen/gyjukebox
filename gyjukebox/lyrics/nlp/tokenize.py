@@ -1,5 +1,5 @@
 import itertools
-from gyjukebox.lyrics.ucd import get_wordbreak_mappings
+from gyjukebox.lyrics.data.ucd import get_wordbreak_mappings
 
 
 def words(text, wb_mapping=None):

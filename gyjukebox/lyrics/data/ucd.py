@@ -9,7 +9,7 @@ import pathlib
 import json
 import functools
 import requests
-from gyjukebox.lyrics.util import Peekable
+from gyjukebox.lyrics.data.utils import Peekable
 
 UCD_WORDBREAK_URL = (
     "https://www.unicode.org/Public/12.1.0/ucd/auxiliary/WordBreakProperty.txt"
