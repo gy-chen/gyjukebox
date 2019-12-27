@@ -101,13 +101,8 @@ class Indexer:
         docs_len = 0
         for i, doc in enumerate(docs):
             doc_tokens = docs.analysis(doc)
-            tf = collections.defaultdict(int)
-            for token in doc_tokens:
-                tf[token] += 1
-                inverted_index[token].add(i)
-            for token in tf:
-                tf[token] /= len(doc_tokens)
             for token in set(doc_tokens):
+                inverted_index[token].add(i)
                 df[token] += 1
                 tokens.add(token)
             docs_len += 1
