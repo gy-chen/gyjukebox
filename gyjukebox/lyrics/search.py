@@ -1,4 +1,3 @@
-import functools
 from gyjukebox.lyrics.nlp.pure.docs import LyricsDocs
 from gyjukebox.lyrics.nlp.pure.index import FileIndexDataReader
 from gyjukebox.lyrics.nlp.pure.index import FileIndexPerDocumentReader
@@ -37,7 +36,6 @@ class PureNlpLyricsSearcher(LyricsSearcher):
         index_per_document_reader = FileIndexPerDocumentReader(index_data_path)
         return Searcher(docs, index_data_reader, index_per_document_reader)
 
-    @functools.lru_cache()
     def search(self, artist, title):
         doc = {"artist": artist, "title": title}
         result = self._searcher.search(doc, n=1, return_doc=True)
