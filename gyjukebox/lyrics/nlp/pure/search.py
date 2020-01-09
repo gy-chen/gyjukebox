@@ -1,4 +1,4 @@
-import numpy as np
+import heapq
 
 
 class Searcher:
@@ -29,14 +29,15 @@ class Searcher:
                 continue
 
         search_doc_indexes = list(search_doc_indexes)
+
+        heap = []
         doc_index = self._docs.index(doc)
-        search_scores = [
-            self._docs.score(doc_index, self._index_per_document_reader.get(i))
-            for i in search_doc_indexes
-        ]
-        search_i = np.argsort(search_scores)
+        for i in search_doc_indexes:
+            score = self._docs.score(doc_index, self._index_per_document_reader.get(i))
+            heapq.heappush(heap, (-score, i))
         transform = self._docs.get if return_doc else lambda i: i
-        return [
-            (transform(search_doc_indexes[i]), search_scores[i])
-            for i in search_i[::-1][:n]
-        ]
+        result = []
+        for _ in range(min(len(heap), n)):
+            score, i = heapq.heappop(heap)
+            result.append((transform(i), -score))
+        return result
