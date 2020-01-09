@@ -31,9 +31,15 @@ class Searcher:
         search_doc_indexes = list(search_doc_indexes)
 
         heap = []
+        good_enough_count = 0
         doc_index = self._docs.index(doc)
         for i in search_doc_indexes:
+            if good_enough_count == n:
+                break
             score = self._docs.score(doc_index, self._index_per_document_reader.get(i))
+            # XXX adjust this value if change score function
+            if score > 1.8:
+                good_enough_count += 1
             heapq.heappush(heap, (-score, i))
         transform = self._docs.get if return_doc else lambda i: i
         result = []
