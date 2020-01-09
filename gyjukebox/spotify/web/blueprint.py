@@ -5,6 +5,7 @@ from flask import jsonify
 from gyjukebox.login.web import login_ext
 from gyjukebox.spotify.web import spotify_ext
 from gyjukebox.spotify.model import RequestTrack, Track
+from gyjukebox.lyrics.web import lyrics_search_ext
 
 bp = Blueprint("spotify", __name__)
 
@@ -102,6 +103,26 @@ def get_current_track():
     }
     user = {"name": current_request_track.user.name}
     return jsonify(track=track, user=user)
+
+
+@bp.route("/lyrics/current")
+@login_ext.required_login
+def get_current_track_lyrics():
+    current_request_track = spotify_ext.player.get_playing_track()
+    if current_request_track is None:
+        return jsonify(lyrics=None)
+    lyrics = None
+    searched_lyrics = lyrics_search_ext.searcher.search(
+        " ".join(artist["name"] for artist in current_request_track.track.artists),
+        current_request_track.track.name,
+    )
+    if searched_lyrics:
+        lyrics = {
+            "artist": searched_lyrics.artist,
+            "title": searched_lyrics.title,
+            "lyrics": searched_lyrics.lyrics,
+        }
+    return jsonify(lyrics=lyrics)
 
 
 @bp.route("/album/<id_or_uri>/tracks")
