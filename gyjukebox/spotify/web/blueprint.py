@@ -110,19 +110,20 @@ def get_current_track():
 def get_current_track_lyrics():
     current_request_track = spotify_ext.player.get_playing_track()
     if current_request_track is None:
-        return jsonify(lyrics=None)
+        return jsonify(artist=None, title=None, lyrics=None)
+    artist = None
+    title = None
     lyrics = None
     searched_lyrics = lyrics_search_ext.searcher.search(
         " ".join(artist["name"] for artist in current_request_track.track.artists),
         current_request_track.track.name,
     )
     if searched_lyrics:
-        lyrics = {
-            "artist": searched_lyrics.artist,
-            "title": searched_lyrics.title,
-            "lyrics": searched_lyrics.lyrics,
-        }
-    return jsonify(lyrics=lyrics)
+        artist = (searched_lyrics.artist,)
+        title = (searched_lyrics.title,)
+        lyrics = (searched_lyrics.lyrics,)
+
+    return jsonify(artist=artist, title=title, lyrics=lyrics)
 
 
 @bp.route("/album/<id_or_uri>/tracks")
