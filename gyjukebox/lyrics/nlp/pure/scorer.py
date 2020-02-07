@@ -7,4 +7,4 @@ class CosineSimScorer:
         for token, freq in bow1.items():
             dot_prod += freq * bow2.get(token, 0)
 
-        return (dot_prod + 1) / ((mag1 * mag2) + 1)
+        return dot_prod / ((mag1 * mag2) + .0001)

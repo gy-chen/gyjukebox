@@ -1,10 +1,7 @@
 from flask import current_app
 from flask import _app_ctx_stack
 from gyjukebox.lyrics.nlp.pure.index import Indexer
-from gyjukebox.lyrics.nlp.pure.index import FileIndexDataWriter
-from gyjukebox.lyrics.nlp.pure.index import FileIndexDataReader
-from gyjukebox.lyrics.nlp.pure.index import FileIndexPerDocumentWriter
-from gyjukebox.lyrics.nlp.pure.index import FileIndexPerDocumentReader
+from gyjukebox.lyrics.nlp.pure.index import FileTermsWriter
 from gyjukebox.lyrics.nlp.pure.docs import LyricsDocs
 from gyjukebox.lyrics.search import PureNlpLyricsSearcher
 
@@ -23,14 +20,11 @@ class LyricsSearchExt:
         lyrics_path = self.app.config["LYRICS_SEARCH_LYRICS_PATH"]
         index_path = self.app.config["LYRICS_SEARCH_INDEX_PATH"]
         docs = LyricsDocs(lyrics_path)
-        index_data_writer = FileIndexDataWriter(index_path)
+        terms_writer = FileTermsWriter(index_path)
         indexer = Indexer()
-        indexer.index(docs, index_data_writer)
-
-        index_data_reader = FileIndexDataReader(index_path)
-        index_data = index_data_reader.get()
-        index_per_documents_writer = FileIndexPerDocumentWriter(index_path)
-        indexer.index_per_documents(docs, index_data, index_per_documents_writer)
+        indexer.index(docs, terms_writer)
+        terms_writer.commit()
+        terms_writer.close()
 
     @property
     def searcher(self):

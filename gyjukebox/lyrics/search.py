@@ -1,6 +1,6 @@
 from gyjukebox.lyrics.nlp.pure.docs import LyricsDocs
-from gyjukebox.lyrics.nlp.pure.index import FileIndexDataReader
-from gyjukebox.lyrics.nlp.pure.index import FileIndexPerDocumentReader
+from gyjukebox.lyrics.nlp.pure.index import Indexer
+from gyjukebox.lyrics.nlp.pure.index import FileTermsReader
 from gyjukebox.lyrics.nlp.pure.search import Searcher
 from gyjukebox.lyrics.model import Lyrics
 
@@ -31,10 +31,9 @@ class PureNlpLyricsSearcher(LyricsSearcher):
         self._searcher = self._build_searcher(lyrics_docs_path, index_data_path)
 
     def _build_searcher(self, lyrics_docs_path, index_data_path):
-        index_data_reader = FileIndexDataReader(index_data_path)
+        terms_reader = FileTermsReader(index_data_path)
         docs = LyricsDocs(lyrics_docs_path)
-        index_per_document_reader = FileIndexPerDocumentReader(index_data_path)
-        return Searcher(docs, index_data_reader, index_per_document_reader)
+        return Searcher(docs, terms_reader)
 
     def search(self, artist, title):
         doc = {"artist": artist, "title": title}

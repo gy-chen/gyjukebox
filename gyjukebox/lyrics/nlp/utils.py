@@ -19,5 +19,5 @@ def ngrams(sequence, n):
         history.append(next_item)
     for item in sequence:
         history.append(item)
-        yield tuple(history)
+        yield from tuple(history)
         del history[0]

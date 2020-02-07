@@ -1,13 +1,11 @@
 import tempfile
 import pathlib
 import pytest
-from gyjukebox.lyrics.nlp.pure.index import Indexer
-from gyjukebox.lyrics.nlp.pure.index import FileIndexDataWriter
-from gyjukebox.lyrics.nlp.pure.index import FileIndexDataReader
-from gyjukebox.lyrics.nlp.pure.index import FileIndexPerDocumentWriter
-from gyjukebox.lyrics.nlp.pure.index import FileIndexPerDocumentReader
-from gyjukebox.lyrics.nlp.pure.search import Searcher
 from gyjukebox.lyrics.nlp.pure.docs import LyricsDocs
+from gyjukebox.lyrics.nlp.pure.index import Indexer
+from gyjukebox.lyrics.nlp.pure.index import FileTermsWriter
+from gyjukebox.lyrics.nlp.pure.index import FileTermsReader
+from gyjukebox.lyrics.nlp.pure.search import Searcher
 from gyjukebox.lyrics.search import PureNlpLyricsSearcher
 
 
@@ -24,18 +22,15 @@ def lyrics_path():
 
 def test_pure_nlp_without_error(index_dir, lyrics_path):
     docs = LyricsDocs(lyrics_path)
-    index_data_writer = FileIndexDataWriter(index_dir)
+    terms_writer = FileTermsWriter(index_dir)
     indexer = Indexer()
-    indexer.index(docs, index_data_writer)
+    indexer.index(docs, terms_writer)
+    terms_writer.commit()
+    terms_writer.close()
 
-    index_data_reader = FileIndexDataReader(index_dir)
-    index_per_documents_writer = FileIndexPerDocumentWriter(index_dir)
-    indexer.index_per_documents(
-        docs, index_data_reader.get(), index_per_documents_writer
-    )
+    terms_reader = FileTermsReader(index_dir)
 
-    index_per_document_reader = FileIndexPerDocumentReader(index_dir)
-    searcher = Searcher(docs, index_data_reader, index_per_document_reader)
+    searcher = Searcher(docs, terms_reader)
     searcher.search({"artist": "air", "title": "love"})
 
 
