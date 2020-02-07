@@ -33,10 +33,22 @@ class Searcher:
         """
         doc_token_freqs = collections.Counter(self._docs.analysis(doc))
 
-        search_doc_ids = set()
+        search_doc_id_freqs = collections.defaultdict(int)
         for doc_token in doc_token_freqs.keys():
-            search_doc_ids.update(self._terms_reader.get_doc_ids(doc_token))
- 
+            for doc_id in self._terms_reader.get_doc_ids(doc_token):
+                search_doc_id_freqs[doc_id] += 1
+
+        search_doc_id_freqs = sorted(
+            (
+                (freq, self._terms_reader.get_doc_mag(doc_id), doc_id)
+                for doc_id, freq in search_doc_id_freqs.items()
+            ),
+            reverse=True,
+        )
+        search_doc_ids = []
+        while len(search_doc_ids) < n and search_doc_id_freqs:
+            search_doc_ids.append(search_doc_id_freqs.pop(0)[2])
+
         heap = []
         for i in search_doc_ids:
             score = self._score(doc_token_freqs, i)
