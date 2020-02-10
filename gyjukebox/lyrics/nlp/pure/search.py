@@ -40,7 +40,7 @@ class Searcher:
 
         search_doc_id_freqs = sorted(
             (
-                (freq, self._terms_reader.get_doc_mag(doc_id), doc_id)
+                (freq, -self._terms_reader.get_doc_mag(doc_id), doc_id)
                 for doc_id, freq in search_doc_id_freqs.items()
             ),
             reverse=True,
