@@ -59,7 +59,7 @@ class FileTermsWriter(TermsWriter):
     def __init__(self, index_path, filename="terms.db"):
         self._current_doc_id = None
         self._current_freqs = None
-        self._db_path = Path(index_path) / filename
+        self._db_path = str(Path(index_path) / filename)
         self._init_db()
         self._conn = sqlite3.connect(self._db_path)
 
@@ -137,7 +137,7 @@ class InMemoryTermsReader(TermsReader):
 
 class FileTermsReader(TermsReader):
     def __init__(self, index_path, filename="terms.db"):
-        db_path = Path(index_path) / filename
+        db_path = str(Path(index_path) / filename)
         self._conn = sqlite3.connect(db_path)
 
     def get_doc_ids(self, term):
