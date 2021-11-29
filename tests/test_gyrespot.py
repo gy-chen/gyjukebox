@@ -6,7 +6,7 @@ from gyjukebox.gyrespot import GYRespot
 from gyjukebox.gyrespot.eventloop import EventLoop
 
 
-def test_play_output():
+def test_play_output(empty_app):
     with BytesIO() as f:
         end_of_track = Event()
 
@@ -18,7 +18,12 @@ def test_play_output():
         def on_end_of_track():
             end_of_track.set()
 
-        gyrespot = GYRespot(on_music_delivery_callback, on_end_of_track)
+        gyrespot = GYRespot(
+            on_music_delivery_callback,
+            on_end_of_track,
+            username=empty_app.config["SPOTIFY_USERNAME"],
+            password=empty_app.config["SPOTIFY_PASSWORD"],
+        )
 
         eventloop = EventLoop(gyrespot)
 

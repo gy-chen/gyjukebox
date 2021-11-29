@@ -1,9 +1,12 @@
 import os
+from logging import Logger
 from collections import namedtuple
 from threading import Event, Lock
 from pathlib import Path
 from select import select
 from subprocess import Popen, PIPE
+
+logger = Logger(__name__)
 
 
 class TrackIsPlayingError(Exception):
@@ -104,6 +107,7 @@ class GYRespot:
 
     def _parse_command_result(self, raw):
         # XXX: only play command here and no need to check play result, ignore parsing for now
+        logger.info(f"command result: {raw}")
         return None
 
     def _read_stream(self):
