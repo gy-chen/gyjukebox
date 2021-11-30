@@ -2,11 +2,17 @@ import os
 from logging import Logger
 from collections import namedtuple
 from threading import Event, Lock
+from queue import Queue, Empty
 from pathlib import Path
 from select import select
 from subprocess import Popen, PIPE
+from gyjukebox.gyrespot.eventemitter import EventEmitter
 
 logger = Logger(__name__)
+
+
+def connect_gyrespot_hls_streaming(gyrespot, hlsstreaming):
+    gyrespot.on_music_delivery_callback = hlsstreaming.on_music_delivery
 
 
 class TrackIsPlayingError(Exception):
@@ -17,20 +23,20 @@ class _ReadOutputTimeoutError(Exception):
     pass
 
 
-class GYRespot:
+class GYRespot(EventEmitter):
+    EVENT_ON_END_OF_TRACK = "on_end_of_track"
+
     def __init__(
         self,
-        on_music_delivery_callback,
-        on_end_of_track,
         username=None,
         password=None,
         executable=None,
     ):
+        super().__init__()
         self._executable = (
             executable if executable is not None else self._find_gyrespot_executable()
         )
-        self._on_music_delivery_callback = on_music_delivery_callback
-        self._on_end_of_track = on_end_of_track
+        self._on_music_delivery_callback = None
         self._start_lock = Lock()
         self._play_lock = Lock()
         self._is_started = Event()
@@ -42,9 +48,24 @@ class GYRespot:
         )
         self._p = None
         self._buffer = None
+        self._q = Queue()
+
+    @property
+    def on_music_delivery_callback(self):
+        return self._on_music_delivery_callback
+
+    @on_music_delivery_callback.setter
+    def on_music_delivery_callback(self, on_music_delivery_callback):
+        self._on_music_delivery_callback = on_music_delivery_callback
 
     def process_events(self):
+        assert self._on_music_delivery_callback is not None
         with self._play_lock:
+            try:
+                self._q.get(timeout=0.01)
+            except Empty:
+                pass
+
             consumed = False
             try:
                 buffer = self._read_stream()
@@ -65,7 +86,7 @@ class GYRespot:
                     # XXX: ignore command result for now
                     self._read_command_result()
                     self._is_playing.clear()
-                    self._on_end_of_track()
+                    self.emit(self.EVENT_ON_END_OF_TRACK)
             except _ReadOutputTimeoutError:
                 pass
 
@@ -95,6 +116,7 @@ class GYRespot:
         )
 
     def _write_command(self, command):
+        logger.info(f"send command: {command}")
         self._p.stdin.write(f"{command}\n".encode())
         self._p.stdin.flush()
 
@@ -102,7 +124,7 @@ class GYRespot:
         try:
             (pstderr,), _, _ = select([self._p.stderr], [], [], 0.01)
             return self._parse_command_result(pstderr.readline())
-        except ValueError:
+        except (ValueError, AttributeError):
             raise _ReadOutputTimeoutError()
 
     def _parse_command_result(self, raw):
@@ -118,7 +140,7 @@ class GYRespot:
             (pstdout,), _, _ = select([self._p.stdout], [], [], 0.01)
             self._buffer = pstdout.read(8192)
             return self._buffer
-        except ValueError:
+        except (ValueError, AttributeError):
             raise _ReadOutputTimeoutError()
 
     def _clear_buffer(self):

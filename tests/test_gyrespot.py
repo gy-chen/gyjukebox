@@ -1,12 +1,10 @@
-import pytest
 from threading import Event
-from pathlib import Path
 from io import BytesIO
 from gyjukebox.gyrespot import GYRespot
 from gyjukebox.gyrespot.eventloop import EventLoop
 
 
-def test_play_output(empty_app):
+def test_play_output(gyrespot):
     with BytesIO() as f:
         end_of_track = Event()
 
@@ -18,12 +16,8 @@ def test_play_output(empty_app):
         def on_end_of_track():
             end_of_track.set()
 
-        gyrespot = GYRespot(
-            on_music_delivery_callback,
-            on_end_of_track,
-            username=empty_app.config["SPOTIFY_USERNAME"],
-            password=empty_app.config["SPOTIFY_PASSWORD"],
-        )
+        gyrespot.on_music_delivery_callback = on_music_delivery_callback
+        gyrespot.on(GYRespot.EVENT_ON_END_OF_TRACK, on_end_of_track)
 
         eventloop = EventLoop(gyrespot)
 
