@@ -73,7 +73,7 @@ class HLSStreaming:
 
         audioconvert = Gst.ElementFactory.make("audioconvert")
 
-        voaacenc = Gst.ElementFactory.make("voaacenc")
+        faac = Gst.ElementFactory.make("faac")
 
         sink = Gst.ElementFactory.make("hlssink2")
 
@@ -102,10 +102,10 @@ class HLSStreaming:
             )
 
         # TODO add other hlssink2 options
-        pipeline.add(appsrc, audioconvert, voaacenc, sink)
+        pipeline.add(appsrc, audioconvert, faac, sink)
 
         appsrc.link(audioconvert)
-        audioconvert.link(voaacenc)
-        voaacenc.link(sink)
+        audioconvert.link(faac)
+        faac.link(sink)
 
         return pipeline, appsrc
