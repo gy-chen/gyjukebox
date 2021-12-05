@@ -17,23 +17,23 @@ def test_streaming(gyrespot, hlsstreaming):
     hlsstreaming.start()
     eventloop.start()
 
-    gyrespot.play("1WmgfRc0438mZ0ojv5LDrS")
+    gyrespot.play("spotify:track:1WmgfRc0438mZ0ojv5LDrS")
     end_of_track.wait()
 
     end_of_track.clear()
-    gyrespot.play("7vPWfW9tpx38Jb7MwUfmmX")
+    gyrespot.play("spotify:track:7vPWfW9tpx38Jb7MwUfmmX")
     end_of_track.wait()
 
     end_of_track.clear()
-    gyrespot.play("3QFhZ0lCZRcT9zLRQHmMdu")
+    gyrespot.play("spotify:track:3QFhZ0lCZRcT9zLRQHmMdu")
     end_of_track.wait()
 
     end_of_track.clear()
-    gyrespot.play("6W7dOcsg7jSGRdJ7T4B0A6")
+    gyrespot.play("spotify:track:6W7dOcsg7jSGRdJ7T4B0A6")
     end_of_track.wait()
 
     end_of_track.clear()
-    gyrespot.play("5VDaJPJ2AeqPImMYpsgFvp")
+    gyrespot.play("spotify:track:5VDaJPJ2AeqPImMYpsgFvp")
     end_of_track.wait()
 
     eventloop.stop()

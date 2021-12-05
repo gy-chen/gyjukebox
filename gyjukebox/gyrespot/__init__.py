@@ -8,11 +8,12 @@ from select import select
 from subprocess import Popen, PIPE
 from gyjukebox.gyrespot.eventemitter import EventEmitter
 
-logger = Logger(__name__)
+logger = Logger("GYRespot")
 
 
 def connect_gyrespot_hls_streaming(gyrespot, hlsstreaming):
     gyrespot.on_music_delivery_callback = hlsstreaming.on_music_delivery
+    gyrespot.on(GYRespot.EVENT_ON_END_OF_TRACK, hlsstreaming.on_end_of_track)
 
 
 class TrackIsPlayingError(Exception):
@@ -49,6 +50,7 @@ class GYRespot(EventEmitter):
         self._p = None
         self._buffer = None
         self._q = Queue()
+        self._wait_command = None
 
     @property
     def on_music_delivery_callback(self):
@@ -60,13 +62,14 @@ class GYRespot(EventEmitter):
 
     def process_events(self):
         assert self._on_music_delivery_callback is not None
-        with self._play_lock:
-            try:
-                self._q.get(timeout=0.01)
-            except Empty:
-                pass
+        try:
+            self._q.get(timeout=0.1)
+        except Empty:
+            pass
 
+        with self._play_lock:
             consumed = False
+            end_of_track = False
             try:
                 buffer = self._read_stream()
                 if len(buffer) != 0:
@@ -86,9 +89,13 @@ class GYRespot(EventEmitter):
                     # XXX: ignore command result for now
                     self._read_command_result()
                     self._is_playing.clear()
-                    self.emit(self.EVENT_ON_END_OF_TRACK)
+                    end_of_track = True
             except _ReadOutputTimeoutError:
                 pass
+
+        # prevent deadlock
+        if end_of_track:
+            self.emit(self.EVENT_ON_END_OF_TRACK)
 
     def play(self, track_id):
         self._start()
@@ -138,7 +145,7 @@ class GYRespot(EventEmitter):
 
         try:
             (pstdout,), _, _ = select([self._p.stdout], [], [], 0.01)
-            self._buffer = pstdout.read(8192)
+            self._buffer = pstdout.read(32768)
             return self._buffer
         except (ValueError, AttributeError):
             raise _ReadOutputTimeoutError()

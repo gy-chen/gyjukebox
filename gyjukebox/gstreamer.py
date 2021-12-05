@@ -102,7 +102,10 @@ class HLSStreaming:
             )
 
         # TODO add other hlssink2 options
-        pipeline.add(appsrc, audioconvert, faac, sink)
+        pipeline.add(appsrc)
+        pipeline.add(audioconvert)
+        pipeline.add(faac)
+        pipeline.add(sink)
 
         appsrc.link(audioconvert)
         audioconvert.link(faac)

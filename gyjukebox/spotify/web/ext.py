@@ -1,14 +1,8 @@
-import collections
 import logging
-import spotify
 import gi
-from flask import current_app
-from flask import _app_ctx_stack
-from gyjukebox.spotify.pyspotify import create_logged_in_session
-from gyjukebox.spotify.player import Player
+from flask import _app_ctx_stack, current_app
 from gyjukebox.spotify.search import Client as SearchClient
 from gyjukebox.spotify.search import OAuthClient as OAuthSearchClient
-from gyjukebox.spotify.streaming import SpotifyStreaming
 from gyjukebox.spotify.next_track_queue import RoundRobinNextTrackQueue
 from gyjukebox.spotify.next_track_queue import SimpleNextTrackQueue
 from gyjukebox.oauth.web import oauth_ext
@@ -19,16 +13,48 @@ from gi.repository import GObject, Gst
 
 logger = logging.getLogger(__name__)
 
-_SpotifyExtConfig = collections.namedtuple(
-    "SpotifyExtConfig", "session next_track_queue player streaming loop"
-)
-
 
 class SpotifyExt:
     def __init__(self, app=None):
         self._app = app
         if app is not None:
             self.init_app(app)
+
+    def _init_pyspotify_backend(self, app, next_track_queue, hls_options):
+        import spotify
+        from gyjukebox.spotify.pyspotify import create_logged_in_session
+        from gyjukebox.spotify.player import Player
+        from gyjukebox.spotify.streaming import SpotifyStreaming
+
+        if spotify._session_instance is not None:
+            logger.warning(
+                "Cannot initialize spotify session twice in same process, reuse previous session"
+            )
+        session = spotify._session_instance or create_logged_in_session(
+            app.config["SPOTIFY_USERNAME"], app.config["SPOTIFY_PASSWORD"]
+        )
+        player = Player(session, next_track_queue)
+        streaming = SpotifyStreaming(session, hls_options)
+        loop = spotify.EventLoop(session)
+        return (session, streaming, player, loop)
+
+    def _init_gyrespot_backend(self, app, next_track_queue, hls_options):
+        from gyjukebox.gyrespot import GYRespot, connect_gyrespot_hls_streaming
+        from gyjukebox.gyrespot.player import Player
+        from gyjukebox.gyrespot.eventloop import EventLoop
+        from gyjukebox.gstreamer import HLSStreaming
+
+        gyrespot = GYRespot(
+            app.config["SPOTIFY_USERNAME"], app.config["SPOTIFY_PASSWORD"]
+        )
+
+        streaming = HLSStreaming(hls_options)
+        player = Player(gyrespot, next_track_queue)
+        loop = EventLoop(gyrespot)
+
+        connect_gyrespot_hls_streaming(gyrespot, streaming)
+
+        return (gyrespot, streaming, player, loop)
 
     def init_app(self, app):
         app.config.setdefault("SPOTIFY_USERNAME", None)
@@ -42,14 +68,8 @@ class SpotifyExt:
         app.config.setdefault("SPOTIFY_HLS_TARGET_DURATION", 6)
         app.config.setdefault("SPOTIFY_HLS_MAX_FILES", 30)
         app.config.setdefault("SPOTIFY_QUEUE_TYPE", "RoundRobinNextTrackQueue")
+        app.config.setdefault("SPOTIFY_BACKEND_TYPE", "GYRESPOT")  # GYRESPOT, PYSPOTIFY
 
-        if spotify._session_instance is not None:
-            logger.warning(
-                "Cannot initialize spotify session twice in same process, reuse previous session"
-            )
-        session = spotify._session_instance or create_logged_in_session(
-            app.config["SPOTIFY_USERNAME"], app.config["SPOTIFY_PASSWORD"]
-        )
         if app.config["SPOTIFY_QUEUE_TYPE"] == "RoundRobinNextTrackQueue":
             logger.info("use RoundRobinNextTrackQueue")
             next_track_queue = RoundRobinNextTrackQueue()
@@ -58,7 +78,6 @@ class SpotifyExt:
             next_track_queue = SimpleNextTrackQueue()
         else:
             raise ValueError(f"Unsupport queue type {app.config['SPOTIFY_QUEUE_TYPE']}")
-        player = Player(session, next_track_queue)
 
         Gst.init([])
 
@@ -71,29 +90,36 @@ class SpotifyExt:
             "playlist-length": app.config["SPOTIFY_HLS_PLAYLIST_LENGTH"],
         }
         logger.debug(streaming_options)
-        streaming = SpotifyStreaming(session, streaming_options)
-        loop = spotify.EventLoop(session)
 
-        spotify_ext_config = _SpotifyExtConfig(
-            session, next_track_queue, player, streaming, loop
-        )
-        app.extensions["spotify_ext"] = spotify_ext_config
+        if app.config["SPOTIFY_BACKEND_TYPE"] == "PYSPOTIFY":
+            session, streaming, player, loop = self._init_pyspotify_backend(
+                app, next_track_queue, streaming_options
+            )
+            self._next_track_queue = next_track_queue
+            self._streaming = streaming
+            self._player = player
+            self._loop = loop
+        elif app.config["SPOTIFY_BACKEND_TYPE"] == "GYRESPOT":
+            gyrespot, streaming, player, loop = self._init_gyrespot_backend(
+                app, next_track_queue, streaming_options
+            )
 
-    @property
-    def app(self):
-        return self._app or current_app
+            print("here")
+            self._next_track_queue = next_track_queue
+            self._gyrespot = gyrespot
+            self._streaming = streaming
+            self._player = player
+            self._loop = loop
 
-    @property
-    def session(self):
-        return self.app.extensions["spotify_ext"].session
+        app.extensions["spotify_ext"] = self
 
     @property
     def next_track_queue(self):
-        return self.app.extensions["spotify_ext"].next_track_queue
+        return self._next_track_queue
 
     @property
     def player(self):
-        return self.app.extensions["spotify_ext"].player
+        return self._player
 
     def get_search_client(self, user):
         sub = user.sub
@@ -101,8 +127,8 @@ class SpotifyExt:
             token_saver = oauth_ext.get_token_saver(user)
             return OAuthSearchClient(oauth_ext.spotify_provider, token_saver)
         return SearchClient(
-            self.app.config["SPOTIFY_CLIENT_ID"],
-            self.app.config["SPOTIFY_CLIENT_SECRET"],
+            current_app.config["SPOTIFY_CLIENT_ID"],
+            current_app.config["SPOTIFY_CLIENT_SECRET"],
         )
 
     @property
@@ -117,8 +143,8 @@ class SpotifyExt:
 
     @property
     def streaming(self):
-        return self.app.extensions["spotify_ext"].streaming
+        return self._streaming
 
     @property
     def loop(self):
-        return self.app.extensions["spotify_ext"].loop
+        return self._loop

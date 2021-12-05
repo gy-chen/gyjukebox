@@ -57,7 +57,7 @@ class SpotifyStreaming:
 
         audioconvert = Gst.ElementFactory.make("audioconvert")
 
-        voaacenc = Gst.ElementFactory.make("voaacenc")
+        voaacenc = Gst.ElementFactory.make("faac")
 
         sink = Gst.ElementFactory.make("hlssink2")
 
@@ -87,7 +87,10 @@ class SpotifyStreaming:
 
         # TODO add other hlssink2 options
 
-        pipeline.add(appsrc, audioconvert, voaacenc, sink)
+        pipeline.add(appsrc)
+        pipeline.add(audioconvert)
+        pipeline.add(voaacenc)
+        pipeline.add(sink)
 
         appsrc.link(audioconvert)
         audioconvert.link(voaacenc)

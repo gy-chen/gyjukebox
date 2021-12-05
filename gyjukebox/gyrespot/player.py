@@ -13,7 +13,7 @@ class Player:
         self._change_song_lock = Lock()
 
         self._current_track = None
-        self._gyrespot.on(GYRespot.EVENT_ON_END_OF_TRACK, self._on_end_of_track())
+        self._gyrespot.on(GYRespot.EVENT_ON_END_OF_TRACK, self._on_end_of_track)
 
     def play(self):
         logger.info("Try to start player")
@@ -26,6 +26,7 @@ class Player:
                 next_track = self._get_next_track()
                 logger.info(f"Got next track {next_track}")
                 self._gyrespot.play(next_track.track.uri)
+                self._current_track = next_track
             except NoNextTrackError:
                 logger.info("No next track to paly")
 
@@ -38,3 +39,4 @@ class Player:
     def _on_end_of_track(self):
         with self._change_song_lock:
             self._current_track = None
+        self.play()

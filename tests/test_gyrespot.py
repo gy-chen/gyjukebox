@@ -21,7 +21,7 @@ def test_play_output(gyrespot):
 
         eventloop = EventLoop(gyrespot)
 
-        gyrespot.play("5VDaJPJ2AeqPImMYpsgFvp")
+        gyrespot.play("spotify:track:5VDaJPJ2AeqPImMYpsgFvp")
 
         eventloop.start()
         end_of_track.wait()
