@@ -3,7 +3,7 @@ from flask import Flask
 from gyjukebox.spotify.web import spotify_ext
 from gyjukebox.login.web import login_ext
 from gyjukebox.user.model import User
-from gyjukebox.gyrespot import GYRespot
+from gyjukebox.gyrespot.gyrespot import GYRespot
 from gyjukebox.gstreamer import HLSStreaming
 from gi.repository import Gst
 

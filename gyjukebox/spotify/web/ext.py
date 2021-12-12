@@ -22,9 +22,9 @@ class SpotifyExt:
 
     def _init_pyspotify_backend(self, app, next_track_queue, hls_options):
         import spotify
-        from gyjukebox.spotify.pyspotify import create_logged_in_session
-        from gyjukebox.spotify.player import Player
-        from gyjukebox.spotify.streaming import SpotifyStreaming
+        from gyjukebox.pyspotify import create_logged_in_session
+        from gyjukebox.pyspotify.player import Player
+        from gyjukebox.pyspotify.streaming import SpotifyStreaming
 
         if spotify._session_instance is not None:
             logger.warning(
@@ -39,7 +39,7 @@ class SpotifyExt:
         return (session, streaming, player, loop)
 
     def _init_gyrespot_backend(self, app, next_track_queue, hls_options):
-        from gyjukebox.gyrespot import GYRespot, connect_gyrespot_hls_streaming
+        from gyjukebox.gyrespot.gyrespot import GYRespot, connect_gyrespot_hls_streaming
         from gyjukebox.gyrespot.player import Player
         from gyjukebox.gyrespot.eventloop import EventLoop
         from gyjukebox.gstreamer import HLSStreaming
@@ -103,8 +103,6 @@ class SpotifyExt:
             gyrespot, streaming, player, loop = self._init_gyrespot_backend(
                 app, next_track_queue, streaming_options
             )
-
-            print("here")
             self._next_track_queue = next_track_queue
             self._gyrespot = gyrespot
             self._streaming = streaming

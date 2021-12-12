@@ -1,6 +1,6 @@
 import logging
 from threading import Lock
-from gyjukebox.gyrespot import GYRespot
+from gyjukebox.gyrespot.gyrespot import GYRespot
 from gyjukebox.spotify.next_track_queue import NoNextTrackError
 
 logger = logging.getLogger(__name__)

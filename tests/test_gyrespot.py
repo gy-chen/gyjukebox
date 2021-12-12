@@ -1,6 +1,6 @@
 from threading import Event
 from io import BytesIO
-from gyjukebox.gyrespot import GYRespot
+from gyjukebox.gyrespot.gyrespot import GYRespot
 from gyjukebox.gyrespot.eventloop import EventLoop
 
 

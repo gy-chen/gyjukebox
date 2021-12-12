@@ -1,5 +1,5 @@
 from threading import Event
-from gyjukebox.gyrespot import GYRespot, connect_gyrespot_hls_streaming
+from gyjukebox.gyrespot.gyrespot import GYRespot, connect_gyrespot_hls_streaming
 from gyjukebox.gyrespot.eventloop import EventLoop
 
 
@@ -7,7 +7,6 @@ def test_streaming(gyrespot, hlsstreaming):
     end_of_track = Event()
 
     def on_end_of_track():
-        print("here")
         end_of_track.set()
 
     eventloop = EventLoop(gyrespot)
