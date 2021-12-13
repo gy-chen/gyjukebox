@@ -34,7 +34,7 @@ class LoginExt:
         token = jwt.encode(
             {"sub": user.sub, "name": user.name}, secret, algorithm="HS256"
         )
-        return token.decode()
+        return token
 
     def get_user_from_request(self):
         token = self._get_token_from_request()
