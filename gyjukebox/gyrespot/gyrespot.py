@@ -1,5 +1,5 @@
 import os
-from logging import Logger
+import logging
 from collections import namedtuple
 from threading import Event, Lock
 from queue import Queue, Empty
@@ -8,7 +8,7 @@ from select import select
 from subprocess import Popen, PIPE
 from gyjukebox.gyrespot.eventemitter import EventEmitter
 
-logger = Logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def connect_gyrespot_hls_streaming(gyrespot, hlsstreaming):
