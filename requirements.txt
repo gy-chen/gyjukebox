@@ -1,6 +1,4 @@
 flask
 requests_oauthlib
-pyspotify
 requests
 pyjwt
-pre-commit
