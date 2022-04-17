@@ -141,12 +141,18 @@ class GYRespot(EventEmitter):
         return None
 
     def _read_stream(self):
+        read_size = 32768
         if self._buffer is not None:
-            return self._buffer
+            if len(self._buffer) % 4 == 0:
+                return self._buffer
+            read_size = 4 - (len(self._buffer) % 4)
 
         try:
             (pstdout,), _, _ = select([self._p.stdout], [], [], 0.01)
-            self._buffer = pstdout.read(32768)
+            if self._buffer is None:
+                self._buffer = pstdout.read(read_size)
+            else:
+                self._buffer += pstdout.read(read_size)
             return self._buffer
         except (ValueError, AttributeError):
             raise _ReadOutputTimeoutError()
