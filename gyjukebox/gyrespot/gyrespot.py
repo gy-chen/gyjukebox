@@ -73,7 +73,7 @@ class GYRespot(EventEmitter):
             try:
                 buffer = self._read_stream()
                 # NOTE: gstreamer will crash if buff size is not a multiple of 4
-                if len(buffer) != 0 and len(buff) % 4 == 0:
+                if len(buffer) != 0 and len(buffer) % 4 == 0:
                     num_frames = len(buffer) // 4  # s16 2 ch -> 2 * 2 bytes
                     consumed = self._on_music_delivery_callback(buffer, num_frames)
                     if consumed:
