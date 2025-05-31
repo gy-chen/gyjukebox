@@ -29,8 +29,7 @@ class GYRespot(EventEmitter):
 
     def __init__(
         self,
-        username=None,
-        password=None,
+        cache_location=None,
         executable=None,
     ):
         super().__init__()
@@ -43,9 +42,7 @@ class GYRespot(EventEmitter):
         self._is_started = Event()
         self._is_playing = Event()
         self._env = (
-            {"USERNAME": username, "PASSWORD": password}
-            if username is not None
-            else None
+            {"CACHE_PATH": cache_location} if cache_location is not None else None
         )
         self._p = None
         self._buffer = None

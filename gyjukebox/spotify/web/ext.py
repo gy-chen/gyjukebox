@@ -44,9 +44,7 @@ class SpotifyExt:
         from gyjukebox.gyrespot.eventloop import EventLoop
         from gyjukebox.gstreamer import HLSStreaming
 
-        gyrespot = GYRespot(
-            app.config["SPOTIFY_USERNAME"], app.config["SPOTIFY_PASSWORD"]
-        )
+        gyrespot = GYRespot(app.config["SPOTIFY_CACHE_LOCATION"])
 
         streaming = HLSStreaming(hls_options)
         player = Player(gyrespot, next_track_queue)
@@ -57,6 +55,7 @@ class SpotifyExt:
         return (gyrespot, streaming, player, loop)
 
     def init_app(self, app):
+        app.config.setdefault("SPOTIFY_CACHE_LOCATION", "./.cache")
         app.config.setdefault("SPOTIFY_USERNAME", None)
         app.config.setdefault("SPOTIFY_PASSWORD", None)
         app.config.setdefault("SPOTIFY_CLIENT_ID", None)

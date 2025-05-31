@@ -135,3 +135,4 @@ tests/configtest.py
 hls/
 config_test.py
 lyrics_data/index/
+.cache
