@@ -35,16 +35,14 @@ class HLSStreaming:
         with self._timestamp_lock:
             if self._timestamp is None:
                 logger.debug("no timestamp, set to current time")
-                self._timestamp = time() * Gst.SECOND
+                self._timestamp = int(time()) * Gst.SECOND
         if not self._playing.is_set():
             return 0
         if not frames:
             return 0
 
         # https://gstreamer.freedesktop.org/documentation/tutorials/basic/short-cutting-the-pipeline.htm
-        duration = Gst.util_uint64_scale(
-            num_frames, Gst.SECOND, 44100
-        )
+        duration = Gst.util_uint64_scale(num_frames, Gst.SECOND, 44100)
 
         if self._is_music_delivery_too_fast(duration):
             logger.debug("music delivery too fast")
