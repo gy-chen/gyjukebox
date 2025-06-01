@@ -69,7 +69,7 @@ class BaseClient:
             j_data["albums"]["items"],
             j_data["artists"]["items"],
             j_data["tracks"]["items"],
-            j_data["playlists"]["items"],
+            [it for it in j_data["playlists"]["items"] if it is not None],
         )
         return albums, artists, tracks, playlists
 
@@ -122,7 +122,7 @@ class BaseClient:
         Args:
             id_or_uri (str)
             offset (int)
-        
+
         Raises:
             ValueError: if artist is not exists
 
