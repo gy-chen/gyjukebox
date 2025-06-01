@@ -84,8 +84,7 @@ class GYRespot(EventEmitter):
                     and not consumed
                     and (self._buffer is None or len(self._buffer) == 0)
                 ):
-                    # XXX: ignore command result for now
-                    self._read_command_result()
+                 
                     self._is_playing.clear()
                     end_of_track = True
             except _ReadOutputTimeoutError:
@@ -101,6 +100,8 @@ class GYRespot(EventEmitter):
             if self._is_playing.is_set():
                 raise TrackIsPlayingError()
             self._write_command(f"play {track_id}")
+            # XXX: ignore command result for now
+            self._read_command_result()
             self._is_playing.set()
 
     def _start(self):
@@ -127,7 +128,7 @@ class GYRespot(EventEmitter):
 
     def _read_command_result(self):
         try:
-            (pstderr,), _, _ = select([self._p.stderr], [], [], 0.01)
+            (pstderr,), _, _ = select([self._p.stderr], [], [], 10)
             return self._parse_command_result(pstderr.readline())
         except (ValueError, AttributeError):
             raise _ReadOutputTimeoutError()
